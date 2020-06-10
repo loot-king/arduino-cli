@@ -13,7 +13,7 @@
         <meta name="description" content="Arduino Command Line Interface">
       
       
-        <link rel="canonical" href="https://arduino.github.io/arduino-cli/installation/">
+        <link rel="canonical" href="https://arduino.github.io/arduino-cli/integration-options/">
       
       
       
@@ -40,7 +40,7 @@
     
     
       
-        <title>Installation - Arduino CLI</title>
+        <title>Integration options - Arduino CLI</title>
       
     
     
@@ -91,7 +91,7 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" data-md-component="overlay" for="__drawer"></label>
     
-      <a href="#install-via-homebrew-macoslinux" tabindex="0" class="md-skip">
+      <a href="#the-three-pillars-of-the-arduino-cli" tabindex="0" class="md-skip">
         Skip to content
       </a>
     
@@ -117,7 +117,7 @@
             </span>
             <span class="md-header-nav__topic">
               
-                Installation
+                Integration options
               
             </span>
           
@@ -238,93 +238,11 @@
       
       
 
-  
 
-
-  <li class="md-nav__item md-nav__item--active">
-    
-    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-    
-    
-      <label class="md-nav__link md-nav__link--active" for="__toc">
-        Installation
-      </label>
-    
-    <a href="./" title="Installation" class="md-nav__link md-nav__link--active">
+  <li class="md-nav__item">
+    <a href="../installation/" title="Installation" class="md-nav__link">
       Installation
     </a>
-    
-      
-<nav class="md-nav md-nav--secondary">
-  
-  
-  
-    <label class="md-nav__title" for="__toc">Table of contents</label>
-    <ul class="md-nav__list" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#install-via-homebrew-macoslinux" class="md-nav__link">
-    Install via Homebrew (macOS/Linux)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#use-the-install-script" class="md-nav__link">
-    Use the install script
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#download" class="md-nav__link">
-    Download
-  </a>
-  
-    <nav class="md-nav">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#latest-packages" class="md-nav__link">
-    Latest packages
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#previous-versions" class="md-nav__link">
-    Previous versions
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#nightly-builds" class="md-nav__link">
-    Nightly builds
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#build-from-source" class="md-nav__link">
-    Build from source
-  </a>
-  
-</li>
-      
-      
-      
-      
-      
-    </ul>
-  
-</nav>
-    
   </li>
 
     
@@ -884,11 +802,90 @@
       
       
 
+  
 
-  <li class="md-nav__item">
-    <a href="../integration-options/" title="Integration options" class="md-nav__link">
+
+  <li class="md-nav__item md-nav__item--active">
+    
+    <input class="md-toggle md-nav__toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+    
+      
+    
+    
+      <label class="md-nav__link md-nav__link--active" for="__toc">
+        Integration options
+      </label>
+    
+    <a href="./" title="Integration options" class="md-nav__link md-nav__link--active">
       Integration options
     </a>
+    
+      
+<nav class="md-nav md-nav--secondary">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">Table of contents</label>
+    <ul class="md-nav__list" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-first-pillar-command-line-interface" class="md-nav__link">
+    The first pillar: command line interface
+  </a>
+  
+    <nav class="md-nav">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#console-applications-for-humans" class="md-nav__link">
+    Console applications for humans
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#console-applications-for-robots" class="md-nav__link">
+    Console applications for robots
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-second-pillar-grpc-interface" class="md-nav__link">
+    The second pillar: gRPC interface
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-third-pillar-embedding" class="md-nav__link">
+    The third pillar: embedding
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusions" class="md-nav__link">
+    Conclusions
+  </a>
+  
+</li>
+      
+      
+      
+      
+      
+    </ul>
+  
+</nav>
+    
   </li>
 
     
@@ -966,49 +963,30 @@
 <nav class="md-nav md-nav--secondary">
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">Table of contents</label>
     <ul class="md-nav__list" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#install-via-homebrew-macoslinux" class="md-nav__link">
-    Install via Homebrew (macOS/Linux)
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#use-the-install-script" class="md-nav__link">
-    Use the install script
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#download" class="md-nav__link">
-    Download
+  <a href="#the-first-pillar-command-line-interface" class="md-nav__link">
+    The first pillar: command line interface
   </a>
   
     <nav class="md-nav">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#latest-packages" class="md-nav__link">
-    Latest packages
+  <a href="#console-applications-for-humans" class="md-nav__link">
+    Console applications for humans
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#previous-versions" class="md-nav__link">
-    Previous versions
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#nightly-builds" class="md-nav__link">
-    Nightly builds
+  <a href="#console-applications-for-robots" class="md-nav__link">
+    Console applications for robots
   </a>
   
 </li>
@@ -1019,8 +997,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#build-from-source" class="md-nav__link">
-    Build from source
+  <a href="#the-second-pillar-grpc-interface" class="md-nav__link">
+    The second pillar: gRPC interface
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-third-pillar-embedding" class="md-nav__link">
+    The third pillar: embedding
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conclusions" class="md-nav__link">
+    Conclusions
   </a>
   
 </li>
@@ -1042,132 +1034,96 @@
               
                 
                 
-                  <h1>Installation</h1>
-                
-                <h3 id="install-via-homebrew-macoslinux">Install via Homebrew (macOS/Linux)<a class="headerlink" href="#install-via-homebrew-macoslinux" title="Permanent link">&para;</a></h3>
-<p>The Arduino CLI is available as a Homebrew formula since version
-<code>0.5.0</code>:</p>
-<div class="highlight"><pre><span></span><code>brew update
-brew install arduino-cli
-</code></pre></div>
-
-<h3 id="use-the-install-script">Use the install script<a class="headerlink" href="#use-the-install-script" title="Permanent link">&para;</a></h3>
-<p>The script requires <code>sh</code>. This is always available on Linux and macOS. <code>sh</code> is
-not available by default on Windows. The script may be run on Windows by
-installing <a href="https://gitforwindows.org/">Git for Windows</a>, then running it from Git Bash.</p>
-<p>This script will install the latest version of Arduino CLI to <code>$PWD/bin</code>:</p>
-<div class="highlight"><pre><span></span><code>curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh <span class="p">|</span> sh
-</code></pre></div>
-
-<p>If you want to target a different directory, for example <code>~/local/bin</code>, set the
-<code>BINDIR</code> environment variable like this:</p>
-<div class="highlight"><pre><span></span><code>curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh <span class="p">|</span> <span class="nv">BINDIR</span><span class="o">=</span>~/local/bin sh
-</code></pre></div>
-
-<p>If you would like to use the <code>arduino-cli</code> command from any location, install
-Arduino CLI to a directory already in your <code>PATH</code> or add the Arduino CLI
-installation path to your <code>PATH</code> environment variable.</p>
-<h3 id="download">Download<a class="headerlink" href="#download" title="Permanent link">&para;</a></h3>
-<p>Pre-built binaries for all the supported platforms are available for download
-from the links below.</p>
-<p>If you would like to use the <code>arduino-cli</code> command from any location, extract
-the downloaded file to a directory already in your <code>PATH</code> or add the Arduino CLI
-installation path to your <code>PATH</code> environment variable.</p>
-<h4 id="latest-packages">Latest packages<a class="headerlink" href="#latest-packages" title="Permanent link">&para;</a></h4>
-<table>
-<thead>
-<tr>
-<th>Platform</th>
-<th></th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Linux</td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_32bit.tar.gz">Linux 32 bit</a></td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz">Linux 64 bit</a></td>
-</tr>
-<tr>
-<td>Linux ARM</td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_ARMv7.tar.gz">Linux ARM 32 bit</a></td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_ARM64.tar.gz">Linux ARM 64 bit</a></td>
-</tr>
-<tr>
-<td>Windows</td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Windows_32bit.zip">Windows 32 bit</a></td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Windows_64bit.zip">Windows 64 bit</a></td>
-</tr>
-<tr>
-<td>Mac OSX</td>
-<td></td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_macOS_64bit.tar.gz">Mac OSX</a></td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p><strong>Deprecation notice</strong>: links in the form
-  <code>http://downloads.arduino.cc/arduino-cli/arduino-cli-latest-&lt;platform&gt;.tar.bz2</code>
-  won’t be further updated. That URL will provide the version
-  <code>0.3.7-alpha.preview</code>, regardless of further releases.</p>
-</blockquote>
-<h4 id="previous-versions">Previous versions<a class="headerlink" href="#previous-versions" title="Permanent link">&para;</a></h4>
-<p>These are available from the <a href="https://github.com/arduino/arduino-cli/releases">releases page</a></p>
-<h4 id="nightly-builds">Nightly builds<a class="headerlink" href="#nightly-builds" title="Permanent link">&para;</a></h4>
-<p>These builds are generated everyday at 01:00 GMT from the <code>master</code> branch and
-should be considered unstable. In order to get the latest nightly build
-available for the supported platform, use the following links:</p>
-<table>
-<thead>
-<tr>
-<th>Platform</th>
-<th></th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Linux</td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/nightly/arduino-cli_nightly-latest_Linux_32bit.tar.gz">Nightly Linux 32 bit</a></td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/nightly/arduino-cli_nightly-latest_Linux_64bit.tar.gz">Nightly Linux 64 bit</a></td>
-</tr>
-<tr>
-<td>Linux ARM</td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/nightly/arduino-cli_nightly-latest_Linux_ARMv7.tar.gz">Nightly Linux ARM 32 bit</a></td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/nightly/arduino-cli_nightly-latest_Linux_ARM64.tar.gz">Nightly Linux ARM 64 bit</a></td>
-</tr>
-<tr>
-<td>Windows</td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/nightly/arduino-cli_nightly-latest_Windows_32bit.zip">Nightly Windows 32 bit</a></td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/nightly/arduino-cli_nightly-latest_Windows_64bit.zip">Nightly Windows 64 bit</a></td>
-</tr>
-<tr>
-<td>Mac OSX</td>
-<td></td>
-<td><a href="https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_macOS_64bit.tar.gz">Mac OSX</a></td>
-</tr>
-</tbody>
-</table>
-<blockquote>
-<p>These links return a <code>302: Found</code> response, redirecting to latest
-  generated builds by replacing <code>latest</code> with the latest available build
-  date, using the format YYYYMMDD (i.e for 2019/Aug/06 <code>latest</code> is
-  replaced with <code>20190806</code> )</p>
-</blockquote>
-<p>Checksums for the nightly builds are available at
-<code>https://downloads.arduino.cc/arduino-cli/nightly/nightly-&lt;DATE&gt;-checksums.txt</code></p>
-<h3 id="build-from-source">Build from source<a class="headerlink" href="#build-from-source" title="Permanent link">&para;</a></h3>
-<p>If you’re familiar with Golang or if you want to contribute to the
-project, you will probably build the <code>arduino-cli</code> locally with your
-Go toolchain. Please refer to the [contributing] document for setup instructions.</p>
-<p>If you don’t have a working Golang environment or if you want to build
-<code>arduino-cli</code> targeting different platforms, you can use Docker to get
-a binary directly from sources. From the project folder run:</p>
-<div class="highlight"><pre><span></span><code>docker run -v <span class="nv">$PWD</span>:/arduino-cli -w /arduino-cli -e <span class="nv">PACKAGE_NAME_PREFIX</span><span class="o">=</span><span class="s1">&#39;snapshot&#39;</span> arduino/arduino-cli:builder-1 goreleaser --rm-dist --snapshot --skip-publish
-</code></pre></div>
-
-<p>Once the build is over, you will find a <code>./dist/</code> folder containing the packages
-built out of the current source tree.</p>
+                <h1 id="the-three-pillars-of-the-arduino-cli">The three pillars of the Arduino CLI<a class="headerlink" href="#the-three-pillars-of-the-arduino-cli" title="Permanent link">&para;</a></h1>
+<p>The Arduino CLI is an open source Command Line Application written in <a href="https://golang.org/">Golang</a>
+that can be used from a terminal to compile, verify and upload sketches to
+Arduino boards and that’s capable of managing all the software and tools needed
+in the process. But don’t get fooled by its name: Arduino CLI can do much more
+than the average console application, as shown by the <a href="https://www.arduino.cc/pro/arduino-pro-ide">Arduino Pro IDE</a> and
+<a href="https://create.arduino.cc">Arduino Create</a>, which rely on it for similar purposes but each one in a
+completely different way from the other. In this article we introduce the three
+pillars of the Arduino CLI, explaining how we designed the software so that it
+can be effectively leveraged under different scenarios.</p>
+<h2 id="the-first-pillar-command-line-interface">The first pillar: command line interface<a class="headerlink" href="#the-first-pillar-command-line-interface" title="Permanent link">&para;</a></h2>
+<h3 id="console-applications-for-humans">Console applications for humans<a class="headerlink" href="#console-applications-for-humans" title="Permanent link">&para;</a></h3>
+<p>As you might expect, the first way to use the Arduino CLI is from a terminal and
+by a human, and user experience plays a key role here. The UX is under a
+continuous improvement process as we want the tool to be powerful without being
+too complicated. We heavily rely on sub-commands to provide a rich set of
+different operations logically grouped together, so that users can easily
+explore the interface while getting very specific contextual help.</p>
+<p><img alt="contextual help screenshot" src="../img/CLI_contextual_help_screenshot.png" /></p>
+<h3 id="console-applications-for-robots">Console applications for robots<a class="headerlink" href="#console-applications-for-robots" title="Permanent link">&para;</a></h3>
+<p>Humans are not the only type of customers we want to support and the Arduino CLI
+was also designed to be used programmatically - think about automation pipelines
+or a <a href="https://en.wikipedia.org/wiki/Continuous_integration">CI</a>/<a href="https://en.wikipedia.org/wiki/Continuous_deployment">CD</a> system.
+There are some niceties to observe when you write software that’s supposed to be
+easy to run when unattended and one in particular is the ability to run without
+a configuration file. This is possible because every configuration option you
+find in the arduino-cli.yaml configuration file can be provided either through a
+command line flag or by setting an environment variable. To give an example, the
+following commands are all equivalent and will proceed fetching the unstable
+package index that can be used to work with experimental versions of cores:</p>
+<p><img alt="configuration methods screenshot" src="../img/CLI_configuration_methods_screenshot.png" /></p>
+<p>One note about the example above: passing a value through a command line flag
+always takes precedence over reading an environment variable, which in turn
+always takes precedence over reading the same value from the configuration file
+(if you have one).
+Consistent with the previous paragraph, when it comes to providing output the
+Arduino CLI aims to be user friendly but also slightly verbose, something that
+doesn’t play well with robots. This is why we added an option to provide output
+that’s easy to parse, for example the following figure shows what getting the
+software version in <a href="https://www.json.org">JSON</a> format looks like.</p>
+<p><img alt="JSON output screenshot" src="../img/CLI_JSON_output_screenshot.png" /></p>
+<p>Even if not related to software design, one last feature that’s worth mentioning
+is the availability of a one-line <a href="../installation/#use-the-install-script">installation script</a> that can be used to make
+the latest version of the Arduino CLI available on most systems with an HTTP
+client like curl or wget and a shell like bash.</p>
+<p>For more information on Arduino CLI's command line interface, see the
+<a href="../commands/arduino-cli">command reference</a>.</p>
+<h2 id="the-second-pillar-grpc-interface">The second pillar: gRPC interface<a class="headerlink" href="#the-second-pillar-grpc-interface" title="Permanent link">&para;</a></h2>
+<p><a href="https://grpc.io/">gRPC</a> is a high performance <a href="https://en.wikipedia.org/wiki/Remote_procedure_call">RPC</a> framework that can efficiently connect client
+and server applications. The Arduino CLI can act as a gRPC server (we call it
+<a href="../commands/arduino-cli_daemon">daemon mode</a>), exposing a set of procedures that implement the very same set of
+features of the command line interface and waiting for clients to connect and
+use them. To give an idea, the following is some <a href="https://golang.org/">Golang</a> code capable of
+retrieving the version number of a remote running Arduino CLI server instance:</p>
+<p><img alt="gRPC interface screenshot" src="../img/CLI_gRPC_interface_screenshot.png" /></p>
+<p>gRPC is language agnostic: even if the example is written in Golang, the
+programming language used for the client can be Python, JavaScript or any of the
+many <a href="https://grpc.io/docs/languages/">supported ones</a>, leading to a variety of
+possible scenarios. The new <a href="https://www.arduino.cc/pro/arduino-pro-ide">Arduino Pro IDE</a> is a good example of how to
+leverage the daemon mode of the Arduino CLI with a clean separation of concerns:
+the Pro IDE knows nothing about how to download a core, compile a sketch or talk
+to an Arduino board and it demands all these features of an Arduino CLI instance.
+Conversely, the Arduino CLI doesn’t even know that the client that’s connected
+is the Pro IDE, and neither does it care.</p>
+<p>For more information on Arduino CLI's gRPC interface, see the
+<a href="../rpc/commands">gRPC interface reference</a>.</p>
+<h2 id="the-third-pillar-embedding">The third pillar: embedding<a class="headerlink" href="#the-third-pillar-embedding" title="Permanent link">&para;</a></h2>
+<p>Arduino CLI is written in <a href="https://golang.org/">Golang</a> and the code is organized in a way that makes
+it easy to use it as a library by including the modules you need in another
+Golang application at compile time. Both the first and second pillars rely on a
+common Golang API, a set of functions that abstract all the functionalities
+offered by the Arduino CLI, so that when we provide a fix or a new feature, they
+are automatically available to both the command line and gRPC interfaces.
+The source modules implementing this API can be imported in other Golang
+programs to embed a full fledged Arduino CLI. For example, this is how some
+backend services powering <a href="https://create.arduino.cc">Arduino Create</a> can compile sketches and manage
+libraries. Just to give you a taste of what it means to embed the Arduino CLI,
+here is how to search for a core using the API:</p>
+<p><img alt="Go library interface screenshot" src="../img/CLI_Go_library_interface_screenshot.png" /></p>
+<p>Embedding the Arduino CLI is limited to Golang applications and requires a deep
+knowledge of its internals; for the average use case the gRPC interface might be
+a better alternative, nevertheless this remains a valid option that we use and
+provide support for.</p>
+<h2 id="conclusions">Conclusions<a class="headerlink" href="#conclusions" title="Permanent link">&para;</a></h2>
+<p>You can start playing with the Arduino CLI right away. The code is open source
+and <a href="https://github.com/arduino/arduino-cli">the repo</a> contains
+<a href="https://github.com/arduino/arduino-cli/blob/master/client_example">example code showing how to implement a gRPC client</a>. If
+you’re curious about how we designed the low level API, have a look at the
+<a href="https://github.com/arduino/arduino-cli/tree/master/commands">commands package</a> and don’t hesitate to leave feedback on the <a href="https://github.com/arduino/arduino-cli/issues">issue tracker</a>
+if you’ve got a use case that doesn’t fit one of the three pillars.</p>
                 
                   
                 
@@ -1189,7 +1145,7 @@ built out of the current source tree.</p>
     <div class="md-footer-nav">
       <nav class="md-footer-nav__inner md-grid">
         
-          <a href=".." title="Documentation Home" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
+          <a href="../rpc/debug/" title="debug" class="md-flex md-footer-nav__link md-footer-nav__link--prev" rel="prev">
             <div class="md-flex__cell md-flex__cell--shrink">
               <i class="md-icon md-icon--arrow-back md-footer-nav__button"></i>
             </div>
@@ -1198,19 +1154,19 @@ built out of the current source tree.</p>
                 <span class="md-footer-nav__direction">
                   Previous
                 </span>
-                Documentation Home
+                debug
               </span>
             </div>
           </a>
         
         
-          <a href="../getting-started/" title="Getting started" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
+          <a href="../sketch-build-process/" title="Sketch build process" class="md-flex md-footer-nav__link md-footer-nav__link--next" rel="next">
             <div class="md-flex__cell md-flex__cell--stretch md-footer-nav__title">
               <span class="md-flex__ellipsis">
                 <span class="md-footer-nav__direction">
                   Next
                 </span>
-                Getting started
+                Sketch build process
               </span>
             </div>
             <div class="md-flex__cell md-flex__cell--shrink">
