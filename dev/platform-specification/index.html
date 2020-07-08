@@ -319,8 +319,8 @@
 
 
   <li class="md-nav__item">
-    <a href="../commands/arduino-cli/" title="Arduino cli" class="md-nav__link">
-      Arduino cli
+    <a href="../commands/arduino-cli/" title="arduino-cli" class="md-nav__link">
+      arduino-cli
     </a>
   </li>
 
@@ -381,6 +381,18 @@
   <li class="md-nav__item">
     <a href="../commands/arduino-cli_board_listall/" title="board listall" class="md-nav__link">
       board listall
+    </a>
+  </li>
+
+        
+          
+          
+          
+
+
+  <li class="md-nav__item">
+    <a href="../commands/arduino-cli_burn-bootloader/" title="burn-bootloader" class="md-nav__link">
+      burn-bootloader
     </a>
   </li>
 
@@ -1082,6 +1094,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#hiding-boards" class="md-nav__link">
+    Hiding boards
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1113,6 +1132,13 @@
           <li class="md-nav__item">
   <a href="#1200-bps-bootloader-reset" class="md-nav__link">
     1200 bps bootloader reset
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upload-using-programmer-by-default" class="md-nav__link">
+    Upload Using Programmer by default
   </a>
   
 </li>
@@ -1402,6 +1428,13 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#hiding-boards" class="md-nav__link">
+    Hiding boards
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1433,6 +1466,13 @@
           <li class="md-nav__item">
   <a href="#1200-bps-bootloader-reset" class="md-nav__link">
     1200 bps bootloader reset
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#upload-using-programmer-by-default" class="md-nav__link">
+    Upload Using Programmer by default
   </a>
   
 </li>
@@ -1529,8 +1569,8 @@
                   <h1>Platform specification</h1>
                 
                 <p>This specification is a 3<sup>rd</sup> party hardware format to be used in Arduino development software starting from the Arduino IDE 1.5.x series.<br>
-This specification allows a 3<sup>rd</sup> party vendor/maintainer to add support for new boards to the Arduino development software by providing a file to unzip into the <em>hardware</em> folder of Arduino's sketchbook folder.<br>
-It is also possible to add new 3<sup>rd</sup> party boards by providing just one configuration file.</p>
+Platforms add support for new boards to the Arduino development software. They are installable either via <a href="../package_index_json-specification/">Boards Manager</a> or manual installation to the <em>hardware</em> folder of Arduino's sketchbook folder.<br>
+A platform may consist of as little as a single configuration file.</p>
 <h2 id="hardware-folders-structure">Hardware Folders structure<a class="headerlink" href="#hardware-folders-structure" title="Permanent link">&para;</a></h2>
 <p>The new hardware folders have a hierarchical structure organized in two levels:</p>
 <ul>
@@ -1600,7 +1640,7 @@ version=1.5.3
 </code></pre></div>
 
 
-<p>The <strong>name</strong> will be shown in the Arduino IDE's Board menu or the Name field of <a href="https://arduino.github.io/arduino-cli/commands/arduino-cli_core/"><code>arduino-cli core</code></a>'s output.<br>
+<p>The <strong>name</strong> will be shown as the Arduino IDE's Board menu section title or the Name field of <a href="../commands/arduino-cli_core_list"><code>arduino-cli core list</code></a>'s output for the platform.<br>
 The <strong>version</strong> is currently unused, it is reserved for future use (probably together with the Boards Manager to handle dependencies on cores).</p>
 <h3 id="build-process">Build process<a class="headerlink" href="#build-process" title="Permanent link">&para;</a></h3>
 <p>The platform.txt file is used to configure the build process. This is done through a list of <strong>recipes</strong>. Each recipe is a command line expression that explains how to call the compiler (or other tools) for every build step and which parameter should be passed.</p>
@@ -1866,6 +1906,13 @@ leonardo.build.variant=leonardo
 <p>In the example above, both Uno and Leonardo share the same core but use different variants.<br>
 In any case, the contents of the selected variant folder path is added to the include search path and its contents are compiled and linked with the sketch.</p>
 <p>The parameter <strong>build.variant.path</strong> is automatically generated.</p>
+<h3 id="hiding-boards">Hiding boards<a class="headerlink" href="#hiding-boards" title="Permanent link">&para;</a></h3>
+<p>Adding a <strong>hide</strong> property to a board definition causes it to not be shown in the Arduino IDE's <strong>Tools &gt; Board</strong> menu.</p>
+<div class="codehilite"><pre><span></span><code>uno.hide=
+</code></pre></div>
+
+
+<p>The value of the property is ignored; it's the presence or absence of the property that controls the board's visibility.</p>
 <h2 id="tools">Tools<a class="headerlink" href="#tools" title="Permanent link">&para;</a></h2>
 <p>The Arduino development software uses external command line tools to upload the compiled sketch to the board or to burn bootloaders using external programmers. For example, <em>avrdude</em> is used for AVR based boards and <em>bossac</em> for SAM based boards, but there is no limit, any command line executable can be used. The command line parameters are specified using <strong>recipes</strong> in the same way used for platform build process.</p>
 <p>Tools are configured inside the platform.txt file. Every Tool is identified by a short name, the Tool ID.
@@ -1921,7 +1968,7 @@ tools.avrdude.upload.pattern=&quot;{cmd.path}&quot; &quot;-C{config.path}&quot; 
 
 
 <h3 id="sketch-upload-configuration">Sketch upload configuration<a class="headerlink" href="#sketch-upload-configuration" title="Permanent link">&para;</a></h3>
-<p>The Upload action is triggered when the user clicks on the "Upload" button on the IDE toolbar or uses <a href="https://arduino.github.io/arduino-cli/commands/arduino-cli_upload/"><code>arduino-cli upload</code></a>.
+<p>The Upload action is triggered when the user clicks on the "Upload" button on the IDE toolbar or uses <a href="../commands/arduino-cli_upload"><code>arduino-cli upload</code></a>.
 The <strong>upload.tool</strong> property determines the tool to be used for upload.
 A specific <strong>upload.tool</strong> property should be defined for every board in boards.txt:</p>
 <div class="codehilite"><pre><span></span><code>[......]
@@ -1966,8 +2013,10 @@ tools.avrdude.upload.pattern=&quot;{cmd.path}&quot; &quot;-C{config.path}&quot; 
 <li><code>wait_for_upload_port</code> causes the upload procedure to wait for the serial port to (re)appear before and after the upload. This is only used when <code>use_1200bps_touch</code> is also set.  When set, after doing the 1200 bps touch, the development software will wait for a new serial port to appear and use that as the port for uploads. Alternatively, if the original port does not disappear within a few seconds, the upload continues with the original port (which can be the case if the board was already put into bootloader manually, or the the disconnect and reconnect was missed). Additionally, after the upload is complete, the IDE again waits for a new port to appear (or the originally selected port to be present).</li>
 </ul>
 <p>Note that the IDE implementation of this 1200 bps touch has some peculiarities, and the newer <code>arduino-cli</code> implementation also seems different (does not wait for the port after the reset, which is probably only needed in the IDE to prevent opening the wrong port on the serial monitor, and does not have a shorter timeout when the port never disappears).</p>
+<h4 id="upload-using-programmer-by-default">Upload Using Programmer by default<a class="headerlink" href="#upload-using-programmer-by-default" title="Permanent link">&para;</a></h4>
+<p>If the <strong>upload.protocol</strong> property is not defined for a board, the Arduino IDE's "Upload" process will use the same behavior as <a href="#upload-using-an-external-programmer">"Upload Using Programmer"</a>. This is convenient for boards which only support uploading via programmer.</p>
 <h3 id="serial-port">Serial port<a class="headerlink" href="#serial-port" title="Permanent link">&para;</a></h3>
-<p>The port selected via the IDE or <a href="https://arduino.github.io/arduino-cli/commands/arduino-cli_upload/"><code>arduino-cli upload</code></a>'s <code>--port</code> option is available as a configuration property <strong>{serial.port}</strong>.</p>
+<p>The port selected via the IDE or <a href="../commands/arduino-cli_upload"><code>arduino-cli upload</code></a>'s <code>--port</code> option is available as a configuration property <strong>{serial.port}</strong>.</p>
 <h3 id="upload-using-an-external-programmer">Upload using an external programmer<a class="headerlink" href="#upload-using-an-external-programmer" title="Permanent link">&para;</a></h3>
 <p><strong>TODO...</strong><br>
 The platform.txt associated with the selected programmer will be used.</p>
@@ -2040,7 +2089,6 @@ duemilanove.menu.cpu.atmega168.build.mcu               =&gt;   build.mcu
 
 
 <p>There is no limit to the number of custom menus that can be defined.</p>
-<p><strong>TODO: add an example with more than one submenu</strong></p>
 <h2 id="referencing-another-core-variant-or-tool">Referencing another core, variant or tool<a class="headerlink" href="#referencing-another-core-variant-or-tool" title="Permanent link">&para;</a></h2>
 <p>Inside the boards.txt we can define a board that uses a core provided by another vendor/maintainer using the syntax <strong>VENDOR_ID:CORE_ID</strong>. For example, if we want to define a board that uses the "arduino" core from the "arduino" vendor we should write:</p>
 <div class="codehilite"><pre><span></span><code>[....]
