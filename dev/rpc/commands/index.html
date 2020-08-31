@@ -1041,6 +1041,20 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#loadsketchreq" class="md-nav__link">
+    LoadSketchReq
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loadsketchresp" class="md-nav__link">
+    LoadSketchResp
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#outdatedreq" class="md-nav__link">
     OutdatedReq
   </a>
@@ -1175,6 +1189,13 @@
           <li class="md-nav__item">
   <a href="#instance" class="md-nav__link">
     Instance
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#programmer" class="md-nav__link">
+    Programmer
   </a>
   
 </li>
@@ -1556,13 +1577,6 @@
           <li class="md-nav__item">
   <a href="#listprogrammersavailableforuploadresp" class="md-nav__link">
     ListProgrammersAvailableForUploadResp
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#programmer" class="md-nav__link">
-    Programmer
   </a>
   
 </li>
@@ -1939,6 +1953,20 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#loadsketchreq" class="md-nav__link">
+    LoadSketchReq
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loadsketchresp" class="md-nav__link">
+    LoadSketchResp
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#outdatedreq" class="md-nav__link">
     OutdatedReq
   </a>
@@ -2073,6 +2101,13 @@
           <li class="md-nav__item">
   <a href="#instance" class="md-nav__link">
     Instance
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#programmer" class="md-nav__link">
+    Programmer
   </a>
   
 </li>
@@ -2459,13 +2494,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#programmer" class="md-nav__link">
-    Programmer
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#uploadreq" class="md-nav__link">
     UploadReq
   </a>
@@ -2545,6 +2573,8 @@
 <li><a href="#cc.arduino.cli.commands.DestroyResp">DestroyResp</a></li>
 <li><a href="#cc.arduino.cli.commands.InitReq">InitReq</a></li>
 <li><a href="#cc.arduino.cli.commands.InitResp">InitResp</a></li>
+<li><a href="#cc.arduino.cli.commands.LoadSketchReq">LoadSketchReq</a></li>
+<li><a href="#cc.arduino.cli.commands.LoadSketchResp">LoadSketchResp</a></li>
 <li><a href="#cc.arduino.cli.commands.OutdatedReq">OutdatedReq</a></li>
 <li><a href="#cc.arduino.cli.commands.OutdatedResp">OutdatedResp</a></li>
 <li><a href="#cc.arduino.cli.commands.RescanReq">RescanReq</a></li>
@@ -2571,6 +2601,7 @@
 <ul>
 <li><a href="#cc.arduino.cli.commands.DownloadProgress">DownloadProgress</a></li>
 <li><a href="#cc.arduino.cli.commands.Instance">Instance</a></li>
+<li><a href="#cc.arduino.cli.commands.Programmer">Programmer</a></li>
 <li><a href="#cc.arduino.cli.commands.TaskProgress">TaskProgress</a></li>
 </ul>
 </li>
@@ -2648,7 +2679,6 @@
 <li><a href="#cc.arduino.cli.commands.BurnBootloaderResp">BurnBootloaderResp</a></li>
 <li><a href="#cc.arduino.cli.commands.ListProgrammersAvailableForUploadReq">ListProgrammersAvailableForUploadReq</a></li>
 <li><a href="#cc.arduino.cli.commands.ListProgrammersAvailableForUploadResp">ListProgrammersAvailableForUploadResp</a></li>
-<li><a href="#cc.arduino.cli.commands.Programmer">Programmer</a></li>
 <li><a href="#cc.arduino.cli.commands.UploadReq">UploadReq</a></li>
 <li><a href="#cc.arduino.cli.commands.UploadResp">UploadResp</a></li>
 </ul>
@@ -2828,6 +2858,12 @@
 <td><a href="#cc.arduino.cli.commands.IdentificationPref">IdentificationPref</a></td>
 <td>repeated</td>
 <td>Identifying information for the board (e.g., USB VID/PID).</td>
+</tr>
+<tr>
+<td>programmers</td>
+<td><a href="#cc.arduino.cli.commands.Programmer">Programmer</a></td>
+<td>repeated</td>
+<td>List of programmers supported by the board</td>
 </tr>
 </tbody>
 </table>
@@ -3389,6 +3425,70 @@
 </tr>
 </tbody>
 </table>
+<p><a name="cc.arduino.cli.commands.LoadSketchReq"></a></p>
+<h3 id="loadsketchreq">LoadSketchReq<a class="headerlink" href="#loadsketchreq" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Label</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>instance</td>
+<td><a href="#cc.arduino.cli.commands.Instance">Instance</a></td>
+<td></td>
+<td>Arduino Core Service instance from the Init response.</td>
+</tr>
+<tr>
+<td>sketch_path</td>
+<td><a href="#string">string</a></td>
+<td></td>
+<td>Absolute path to single sketch file or a sketch folder</td>
+</tr>
+</tbody>
+</table>
+<p><a name="cc.arduino.cli.commands.LoadSketchResp"></a></p>
+<h3 id="loadsketchresp">LoadSketchResp<a class="headerlink" href="#loadsketchresp" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Label</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>main_file</td>
+<td><a href="#string">string</a></td>
+<td></td>
+<td>Absolute path to a main sketch files</td>
+</tr>
+<tr>
+<td>location_path</td>
+<td><a href="#string">string</a></td>
+<td></td>
+<td>Absolute path to folder that contains main_file</td>
+</tr>
+<tr>
+<td>other_sketch_files</td>
+<td><a href="#string">string</a></td>
+<td>repeated</td>
+<td>List of absolute paths to other sketch files</td>
+</tr>
+<tr>
+<td>additional_files</td>
+<td><a href="#string">string</a></td>
+<td>repeated</td>
+<td>List of absolute paths to additional sketch files</td>
+</tr>
+</tbody>
+</table>
 <p><a name="cc.arduino.cli.commands.OutdatedReq"></a></p>
 <h3 id="outdatedreq">OutdatedReq<a class="headerlink" href="#outdatedreq" title="Permanent link">&para;</a></h3>
 <table>
@@ -3738,6 +3838,12 @@
 <td>Get the version of Arduino CLI in use.</td>
 </tr>
 <tr>
+<td>LoadSketch</td>
+<td><a href="#cc.arduino.cli.commands.LoadSketchReq">LoadSketchReq</a></td>
+<td><a href="#cc.arduino.cli.commands.LoadSketchResp">LoadSketchResp</a></td>
+<td>Returns all files composing a Sketch</td>
+</tr>
+<tr>
 <td>BoardDetails</td>
 <td><a href="#cc.arduino.cli.commands.BoardDetailsReq">BoardDetailsReq</a></td>
 <td><a href="#cc.arduino.cli.commands.BoardDetailsResp">BoardDetailsResp</a></td>
@@ -3930,6 +4036,38 @@
 <td><a href="#int32">int32</a></td>
 <td></td>
 <td>The ID of the instance.</td>
+</tr>
+</tbody>
+</table>
+<p><a name="cc.arduino.cli.commands.Programmer"></a></p>
+<h3 id="programmer">Programmer<a class="headerlink" href="#programmer" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Label</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>platform</td>
+<td><a href="#string">string</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>id</td>
+<td><a href="#string">string</a></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>name</td>
+<td><a href="#string">string</a></td>
+<td></td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -4775,6 +4913,12 @@
 <td></td>
 <td>The library format type.</td>
 </tr>
+<tr>
+<td>examples</td>
+<td><a href="#string">string</a></td>
+<td>repeated</td>
+<td>The example sketches provided by the library</td>
+</tr>
 </tbody>
 </table>
 <p><a name="cc.arduino.cli.commands.Library.PropertiesEntry"></a></p>
@@ -5000,6 +5144,18 @@
 <td><a href="#bool">bool</a></td>
 <td></td>
 <td>Whether to list only libraries for which there is a newer version than the installed version available in the libraries index.</td>
+</tr>
+<tr>
+<td>name</td>
+<td><a href="#string">string</a></td>
+<td></td>
+<td>If set filters out the libraries not matching name</td>
+</tr>
+<tr>
+<td>fqbn</td>
+<td><a href="#string">string</a></td>
+<td></td>
+<td>By setting this field all duplicate libraries are filtered out leaving only the libraries that will be used to compile for the specified board FQBN.</td>
 </tr>
 </tbody>
 </table>
@@ -5576,38 +5732,6 @@
 <td>programmers</td>
 <td><a href="#cc.arduino.cli.commands.Programmer">Programmer</a></td>
 <td>repeated</td>
-<td></td>
-</tr>
-</tbody>
-</table>
-<p><a name="cc.arduino.cli.commands.Programmer"></a></p>
-<h3 id="programmer">Programmer<a class="headerlink" href="#programmer" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Field</th>
-<th>Type</th>
-<th>Label</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>platform</td>
-<td><a href="#string">string</a></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>id</td>
-<td><a href="#string">string</a></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>name</td>
-<td><a href="#string">string</a></td>
-<td></td>
 <td></td>
 </tr>
 </tbody>
