@@ -19,7 +19,7 @@ import (
 	"context"
 	"os"
 
-	"github.com/arduino/arduino-cli/arduino/sketches"
+	"github.com/arduino/arduino-cli/arduino/sketch"
 	"github.com/arduino/arduino-cli/cli/errorcodes"
 	"github.com/arduino/arduino-cli/cli/feedback"
 	"github.com/arduino/arduino-cli/cli/instance"
@@ -38,6 +38,7 @@ var (
 	importDir  string
 	importFile string
 	programmer string
+	dryRun     bool
 )
 
 // NewCommand created a new `upload` command
@@ -59,7 +60,8 @@ func NewCommand() *cobra.Command {
 	uploadCommand.Flags().BoolVarP(&verify, "verify", "t", false, "Verify uploaded binary after the upload.")
 	uploadCommand.Flags().BoolVarP(&verbose, "verbose", "v", false, "Optional, turns on verbose mode.")
 	uploadCommand.Flags().StringVarP(&programmer, "programmer", "P", "", "Optional, use the specified programmer to upload.")
-
+	uploadCommand.Flags().BoolVar(&dryRun, "dry-run", false, "Do not perform the actual upload, just log out actions")
+	uploadCommand.Flags().MarkHidden("dry-run")
 	return uploadCommand
 }
 
@@ -71,11 +73,7 @@ func checkFlagsConflicts(command *cobra.Command, args []string) {
 }
 
 func run(command *cobra.Command, args []string) {
-	instance, err := instance.CreateInstance()
-	if err != nil {
-		feedback.Errorf("Error during Upload: %v", err)
-		os.Exit(errorcodes.ErrGeneric)
-	}
+	instance := instance.CreateAndInit()
 
 	var path *paths.Path
 	if len(args) > 0 {
@@ -84,7 +82,7 @@ func run(command *cobra.Command, args []string) {
 	sketchPath := initSketchPath(path)
 
 	// .pde files are still supported but deprecated, this warning urges the user to rename them
-	if files := sketches.CheckForPdeFiles(sketchPath); len(files) > 0 {
+	if files := sketch.CheckForPdeFiles(sketchPath); len(files) > 0 {
 		feedback.Error("Sketches with .pde extension are deprecated, please rename the following files to .ino:")
 		for _, f := range files {
 			feedback.Error(f)
@@ -101,6 +99,7 @@ func run(command *cobra.Command, args []string) {
 		ImportFile: importFile,
 		ImportDir:  importDir,
 		Programmer: programmer,
+		DryRun:     dryRun,
 	}, os.Stdout, os.Stderr); err != nil {
 		feedback.Errorf("Error during Upload: %v", err)
 		os.Exit(errorcodes.ErrGeneric)

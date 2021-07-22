@@ -21,9 +21,12 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"sort"
+	"strings"
 	"sync"
 
 	"github.com/arduino/arduino-cli/arduino/cores/packagemanager"
+	"github.com/arduino/arduino-cli/arduino/discovery"
 	"github.com/arduino/arduino-cli/commands"
 	"github.com/arduino/arduino-cli/httpclient"
 	rpc "github.com/arduino/arduino-cli/rpc/cc/arduino/cli/commands/v1"
@@ -99,9 +102,9 @@ func apiByVidPid(vid, pid string) ([]*rpc.BoardListItem, error) {
 	return retVal, nil
 }
 
-func identifyViaCloudAPI(port *commands.BoardPort) ([]*rpc.BoardListItem, error) {
+func identifyViaCloudAPI(port *discovery.Port) ([]*rpc.BoardListItem, error) {
 	// If the port is not USB do not try identification via cloud
-	id := port.IdentificationPrefs
+	id := port.Properties
 	if !id.ContainsKey("vid") || !id.ContainsKey("pid") {
 		return nil, ErrNotFound
 	}
@@ -111,17 +114,22 @@ func identifyViaCloudAPI(port *commands.BoardPort) ([]*rpc.BoardListItem, error)
 }
 
 // identify returns a list of boards checking first the installed platforms or the Cloud API
-func identify(pm *packagemanager.PackageManager, port *commands.BoardPort) ([]*rpc.BoardListItem, error) {
+func identify(pm *packagemanager.PackageManager, port *discovery.Port) ([]*rpc.BoardListItem, error) {
 	boards := []*rpc.BoardListItem{}
 
 	// first query installed cores through the Package Manager
 	logrus.Debug("Querying installed cores for board identification...")
-	for _, board := range pm.IdentifyBoard(port.IdentificationPrefs) {
+	for _, board := range pm.IdentifyBoard(port.Properties) {
+		// We need the Platform maintaner for sorting so we set it here
+		platform := &rpc.Platform{
+			Maintainer: board.PlatformRelease.Platform.Package.Maintainer,
+		}
 		boards = append(boards, &rpc.BoardListItem{
-			Name: board.Name(),
-			Fqbn: board.FQBN(),
-			Vid:  port.IdentificationPrefs.Get("vid"),
-			Pid:  port.IdentificationPrefs.Get("pid"),
+			Name:     board.Name(),
+			Fqbn:     board.FQBN(),
+			Platform: platform,
+			Vid:      port.Properties.Get("vid"),
+			Pid:      port.Properties.Get("pid"),
 		})
 	}
 
@@ -142,6 +150,25 @@ func identify(pm *packagemanager.PackageManager, port *commands.BoardPort) ([]*r
 		// boards)
 		boards = items
 	}
+
+	// Sort by FQBN alphabetically
+	sort.Slice(boards, func(i, j int) bool {
+		return strings.ToLower(boards[i].Fqbn) < strings.ToLower(boards[j].Fqbn)
+	})
+
+	// Put Arduino boards before others in case there are non Arduino boards with identical VID:PID combination
+	sort.SliceStable(boards, func(i, j int) bool {
+		if boards[i].Platform.Maintainer == "Arduino" && boards[j].Platform.Maintainer != "Arduino" {
+			return true
+		}
+		return false
+	})
+
+	// We need the Board's Platform only for sorting but it shouldn't be present in the output
+	for _, board := range boards {
+		board.Platform = nil
+	}
+
 	return boards, nil
 }
 
@@ -185,7 +212,7 @@ func List(instanceID int32) (r []*rpc.DetectedPort, e error) {
 			Protocol:      port.Protocol,
 			ProtocolLabel: port.ProtocolLabel,
 			Boards:        boards,
-			SerialNumber:  port.Prefs.Get("serialNumber"),
+			SerialNumber:  port.Properties.Get("serialNumber"),
 		}
 		retVal = append(retVal, p)
 	}
@@ -210,14 +237,7 @@ func Watch(instanceID int32, interrupt <-chan bool) (<-chan *rpc.BoardListWatchR
 				boards := []*rpc.BoardListItem{}
 				boardsError := ""
 				if event.Type == "add" {
-					boards, err = identify(pm, &commands.BoardPort{
-						Address:             event.Port.Address,
-						Label:               event.Port.AddressLabel,
-						Prefs:               event.Port.Properties,
-						IdentificationPrefs: event.Port.IdentificationProperties,
-						Protocol:            event.Port.Protocol,
-						ProtocolLabel:       event.Port.ProtocolLabel,
-					})
+					boards, err = identify(pm, event.Port)
 					if err != nil {
 						boardsError = err.Error()
 					}
@@ -240,7 +260,7 @@ func Watch(instanceID int32, interrupt <-chan bool) (<-chan *rpc.BoardListWatchR
 					Error: boardsError,
 				}
 			case <-interrupt:
-				break
+				return
 			}
 		}
 	}()

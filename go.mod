@@ -4,8 +4,8 @@ go 1.14
 
 require (
 	github.com/arduino/board-discovery v0.0.0-20180823133458-1ba29327fb0c
-	github.com/arduino/go-paths-helper v1.4.0
-	github.com/arduino/go-properties-orderedmap v1.3.0
+	github.com/arduino/go-paths-helper v1.6.1
+	github.com/arduino/go-properties-orderedmap v1.5.0
 	github.com/arduino/go-timeutils v0.0.0-20171220113728-d1dd9e313b1b
 	github.com/arduino/go-win32-utils v0.0.0-20180330194947-ed041402e83b
 	github.com/cmaglie/go.rice v1.0.3 // This one must be kept until https://github.com/GeertJohan/go.rice/pull/159 is merged
@@ -16,7 +16,6 @@ require (
 	github.com/fluxio/iohelpers v0.0.0-20160419043813-3a4dd67a94d2 // indirect
 	github.com/fluxio/multierror v0.0.0-20160419044231-9c68d39025e5 // indirect
 	github.com/gofrs/uuid v3.2.0+incompatible
-	github.com/golang/protobuf v1.4.2
 	github.com/h2non/filetype v1.0.8 // indirect
 	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
 	github.com/kr/text v0.2.0 // indirect
@@ -43,11 +42,13 @@ require (
 	go.bug.st/relaxed-semver v0.0.0-20190922224835-391e10178d18
 	go.bug.st/serial v1.1.2
 	go.bug.st/serial.v1 v0.0.0-20180827123349-5f7892a7bb45 // indirect
-	golang.org/x/crypto v0.0.0-20200406173513-056763e48d71
-	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
-	golang.org/x/text v0.3.2
-	google.golang.org/grpc v1.27.0
-	google.golang.org/protobuf v1.25.0
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/net v0.0.0-20210505024714-0287a6fb4125
+	golang.org/x/sys v0.0.0-20210503173754-0981d6026fa6 // indirect
+	golang.org/x/text v0.3.6
+	google.golang.org/genproto v0.0.0-20210504143626-3b2ad6ccc450
+	google.golang.org/grpc v1.37.0
+	google.golang.org/protobuf v1.26.0
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.3.0

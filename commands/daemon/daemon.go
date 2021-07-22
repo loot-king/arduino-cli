@@ -15,10 +15,9 @@
 
 package daemon
 
-//go:generate protoc -I arduino --go_out=plugins=grpc:arduino arduino/arduino.proto
-
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/arduino/arduino-cli/arduino/utils"
@@ -30,10 +29,12 @@ import (
 	"github.com/arduino/arduino-cli/commands/sketch"
 	"github.com/arduino/arduino-cli/commands/upload"
 	rpc "github.com/arduino/arduino-cli/rpc/cc/arduino/cli/commands/v1"
+	"github.com/sirupsen/logrus"
 )
 
 // ArduinoCoreServerImpl FIXMEDOC
 type ArduinoCoreServerImpl struct {
+	rpc.UnimplementedArduinoCoreServiceServer
 	VersionString string
 }
 
@@ -74,14 +75,37 @@ func (s *ArduinoCoreServerImpl) BoardListWatch(stream rpc.ArduinoCoreService_Boa
 		return err
 	}
 
-	interrupt := make(chan bool)
+	if msg.Instance == nil {
+		err = fmt.Errorf("no instance specified")
+		stream.Send(&rpc.BoardListWatchResponse{
+			EventType: "error",
+			Error:     err.Error(),
+		})
+		return err
+	}
+
+	interrupt := make(chan bool, 1)
 	go func() {
-		msg, err := stream.Recv()
-		if err != nil {
-			interrupt <- true
-		}
-		if msg != nil {
-			interrupt <- msg.Interrupt
+		defer close(interrupt)
+		for {
+			msg, err := stream.Recv()
+			// Handle client closing the stream and eventual errors
+			if err == io.EOF {
+				logrus.Info("boards watcher stream closed")
+				interrupt <- true
+				return
+			} else if err != nil {
+				logrus.Infof("interrupting boards watcher: %v", err)
+				interrupt <- true
+				return
+			}
+
+			// Message received, does the client want to interrupt?
+			if msg != nil && msg.Interrupt {
+				logrus.Info("boards watcher interrupted by client")
+				interrupt <- msg.Interrupt
+				return
+			}
 		}
 	}()
 
@@ -91,7 +115,10 @@ func (s *ArduinoCoreServerImpl) BoardListWatch(stream rpc.ArduinoCoreService_Boa
 	}
 
 	for event := range eventsChan {
-		stream.Send(event)
+		err = stream.Send(event)
+		if err != nil {
+			logrus.Infof("sending board watch message: %v", err)
+		}
 	}
 
 	return nil
@@ -112,11 +139,6 @@ func (s *ArduinoCoreServerImpl) BoardAttach(req *rpc.BoardAttachRequest, stream 
 // Destroy FIXMEDOC
 func (s *ArduinoCoreServerImpl) Destroy(ctx context.Context, req *rpc.DestroyRequest) (*rpc.DestroyResponse, error) {
 	return commands.Destroy(ctx, req)
-}
-
-// Rescan FIXMEDOC
-func (s *ArduinoCoreServerImpl) Rescan(ctx context.Context, req *rpc.RescanRequest) (*rpc.RescanResponse, error) {
-	return commands.Rescan(req.GetInstance().GetId())
 }
 
 // UpdateIndex FIXMEDOC
@@ -177,16 +199,24 @@ func (s *ArduinoCoreServerImpl) Upgrade(req *rpc.UpgradeRequest, stream rpc.Ardu
 	return stream.Send(&rpc.UpgradeResponse{})
 }
 
+// Create FIXMEDOC
+func (s *ArduinoCoreServerImpl) Create(_ context.Context, req *rpc.CreateRequest) (*rpc.CreateResponse, error) {
+	res, status := commands.Create(req)
+	if status != nil {
+		return nil, status.Err()
+	}
+	return res, nil
+}
+
 // Init FIXMEDOC
 func (s *ArduinoCoreServerImpl) Init(req *rpc.InitRequest, stream rpc.ArduinoCoreService_InitServer) error {
-	resp, err := commands.Init(stream.Context(), req,
-		func(p *rpc.DownloadProgress) { stream.Send(&rpc.InitResponse{DownloadProgress: p}) },
-		func(p *rpc.TaskProgress) { stream.Send(&rpc.InitResponse{TaskProgress: p}) },
-	)
+	err := commands.Init(req, func(message *rpc.InitResponse) {
+		stream.Send(message)
+	})
 	if err != nil {
-		return err
+		return err.Err()
 	}
-	return stream.Send(resp)
+	return nil
 }
 
 // Version FIXMEDOC

@@ -86,10 +86,10 @@ tasks:
   protoc:compile:
     desc: Compile protobuf definitions
     cmds:
-      - '{{ default "protoc" .PROTOC_BINARY }} --proto_path=rpc --go_out=plugins=grpc,paths=source_relative:rpc ./rpc/cc/arduino/cli/commands/v1/*.proto'
-      - '{{ default "protoc" .PROTOC_BINARY }} --proto_path=rpc --go_out=plugins=grpc,paths=source_relative:rpc ./rpc/cc/arduino/cli/monitor/v1/*.proto'
-      - '{{ default "protoc" .PROTOC_BINARY }} --proto_path=rpc --go_out=plugins=grpc,paths=source_relative:rpc ./rpc/cc/arduino/cli/settings/v1/*.proto'
-      - '{{ default "protoc" .PROTOC_BINARY }} --proto_path=rpc --go_out=plugins=grpc,paths=source_relative:rpc ./rpc/cc/arduino/cli/debug/v1/*.proto'
+      - '{{ default "protoc" .PROTOC_BINARY }} --proto_path=rpc --go_out=./rpc --go_opt=paths=source_relative --go-grpc_out=./rpc --go-grpc_opt=paths=source_relative ./rpc/cc/arduino/cli/commands/v1/*.proto'
+      - '{{ default "protoc" .PROTOC_BINARY }} --proto_path=rpc --go_out=./rpc --go_opt=paths=source_relative --go-grpc_out=./rpc --go-grpc_opt=paths=source_relative ./rpc/cc/arduino/cli/monitor/v1/*.proto'
+      - '{{ default "protoc" .PROTOC_BINARY }} --proto_path=rpc --go_out=./rpc --go_opt=paths=source_relative --go-grpc_out=./rpc --go-grpc_opt=paths=source_relative ./rpc/cc/arduino/cli/settings/v1/*.proto'
+      - '{{ default "protoc" .PROTOC_BINARY }} --proto_path=rpc --go_out=./rpc --go_opt=paths=source_relative --go-grpc_out=./rpc --go-grpc_opt=paths=source_relative ./rpc/cc/arduino/cli/debug/v1/*.proto'
 
   protoc:docs:
     desc: Generate docs for protobuf definitions
@@ -214,7 +214,7 @@ tasks:
     desc: Generate embedded i18n catalog files
     cmds:
       - git add -N ./i18n/data
-      - git diff --exit-code ./i18n/data &> /dev/null || (cd ./i18n && rice embed-go)
+      - git diff --exit-code ./i18n/data &> /dev/null || { cd ./i18n && rice embed-go; }
 
 vars:
   PROJECT_NAME: "arduino-cli"
@@ -224,7 +224,7 @@ vars:
     sh: echo `go list ./... | grep -v legacy | tr '\n' ' '`
   # build vars
   COMMIT:
-    sh: echo "$(git log -n 1 --format=%h)"
+    sh: echo "$(git log --no-show-signature -n 1 --format=%h)"
   TIMESTAMP:
     sh: echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
   TIMESTAMP_SHORT:

@@ -16,8 +16,8 @@
 package core
 
 import (
+	"fmt"
 	"os"
-	"sort"
 
 	"github.com/arduino/arduino-cli/cli/errorcodes"
 	"github.com/arduino/arduino-cli/cli/feedback"
@@ -49,12 +49,7 @@ var listFlags struct {
 }
 
 func runListCommand(cmd *cobra.Command, args []string) {
-	inst, err := instance.CreateInstance()
-	if err != nil {
-		feedback.Errorf("Error listing platforms: %v", err)
-		os.Exit(errorcodes.ErrGeneric)
-	}
-
+	inst := instance.CreateAndInit()
 	logrus.Info("Executing `arduino core list`")
 
 	platforms, err := core.GetPlatforms(&rpc.PlatformListRequest{
@@ -87,11 +82,12 @@ func (ir installedResult) String() string {
 
 	t := table.New()
 	t.SetHeader("ID", "Installed", "Latest", "Name")
-	sort.Slice(ir.platforms, func(i, j int) bool {
-		return ir.platforms[i].Id < ir.platforms[j].Id
-	})
 	for _, p := range ir.platforms {
-		t.AddRow(p.Id, p.Installed, p.Latest, p.Name)
+		name := p.Name
+		if p.Deprecated {
+			name = fmt.Sprintf("[DEPRECATED] %s", name)
+		}
+		t.AddRow(p.Id, p.Installed, p.Latest, name)
 	}
 
 	return t.Render()

@@ -50,6 +50,12 @@ func Details(ctx context.Context, req *rpc.BoardDetailsRequest) (*rpc.BoardDetai
 	details.PropertiesId = board.BoardID
 	details.Official = fqbn.Package == "arduino"
 	details.Version = board.PlatformRelease.Version.String()
+	details.IdentificationProperties = []*rpc.BoardIdentificationProperties{}
+	for _, p := range board.GetIdentificationProperties() {
+		details.IdentificationProperties = append(details.IdentificationProperties, &rpc.BoardIdentificationProperties{
+			Properties: p.AsMap(),
+		})
+	}
 
 	details.DebuggingSupported = boardProperties.ContainsKey("debug.executable") ||
 		boardPlatform.Properties.ContainsKey("debug.executable") ||
@@ -80,16 +86,6 @@ func Details(ctx context.Context, req *rpc.BoardDetailsRequest) (*rpc.BoardDetai
 		details.Platform.Size = boardPlatform.Resource.Size
 	}
 
-	details.IdentificationPrefs = []*rpc.IdentificationPref{}
-	vids := board.Properties.SubTree("vid")
-	pids := board.Properties.SubTree("pid")
-	for id, vid := range vids.AsMap() {
-		if pid, ok := pids.GetOk(id); ok {
-			idPref := rpc.IdentificationPref{UsbId: &rpc.USBID{Vid: vid, Pid: pid}}
-			details.IdentificationPrefs = append(details.IdentificationPrefs, &idPref)
-		}
-	}
-
 	details.ConfigOptions = []*rpc.ConfigOption{}
 	options := board.GetConfigOptions()
 	for _, option := range options.Keys() {
@@ -115,7 +111,7 @@ func Details(ctx context.Context, req *rpc.BoardDetailsRequest) (*rpc.BoardDetai
 	}
 
 	details.ToolsDependencies = []*rpc.ToolsDependencies{}
-	for _, tool := range boardPlatform.Dependencies {
+	for _, tool := range boardPlatform.ToolDependencies {
 		toolRelease := pm.FindToolDependency(tool)
 		var systems []*rpc.Systems
 		if toolRelease != nil {

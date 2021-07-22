@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/arduino/arduino-cli/cli/globals"
 	"github.com/arduino/arduino-cli/executils"
 	"github.com/arduino/go-properties-orderedmap"
 	"github.com/pkg/errors"
@@ -30,7 +31,6 @@ import (
 // with the boards.
 type PluggableDiscovery struct {
 	id                   string
-	args                 []string
 	process              *executils.Process
 	outgoingCommandsPipe io.Writer
 	incomingMessagesChan <-chan *discoveryMessage
@@ -45,20 +45,21 @@ type PluggableDiscovery struct {
 }
 
 type discoveryMessage struct {
-	EventType string  `json:"eventType"`
-	Message   string  `json:"message"`
-	Ports     []*Port `json:"ports"`
-	Port      *Port   `json:"port"`
+	EventType       string  `json:"eventType"`
+	Message         string  `json:"message"`
+	Error           bool    `json:"error"`
+	ProtocolVersion int     `json:"protocolVersion"` // Used in HELLO command
+	Ports           []*Port `json:"ports"`           // Used in LIST command
+	Port            *Port   `json:"port"`            // Used in add and remove events
 }
 
 // Port containts metadata about a port to connect to a board.
 type Port struct {
-	Address                  string          `json:"address"`
-	AddressLabel             string          `json:"label"`
-	Protocol                 string          `json:"protocol"`
-	ProtocolLabel            string          `json:"protocolLabel"`
-	Properties               *properties.Map `json:"prefs"`
-	IdentificationProperties *properties.Map `json:"identificationPrefs"`
+	Address       string          `json:"address"`
+	AddressLabel  string          `json:"label"`
+	Protocol      string          `json:"protocol"`
+	ProtocolLabel string          `json:"protocolLabel"`
+	Properties    *properties.Map `json:"properties"`
 }
 
 func (p *Port) String() string {
@@ -88,16 +89,12 @@ func New(id string, args ...string) (*PluggableDiscovery, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := proc.Start(); err != nil {
-		return nil, err
-	}
 	messageChan := make(chan *discoveryMessage)
 	disc := &PluggableDiscovery{
 		id:                   id,
 		process:              proc,
 		incomingMessagesChan: messageChan,
 		outgoingCommandsPipe: stdin,
-		alive:                true,
 	}
 	go disc.jsonDecodeLoop(stdout, messageChan)
 	return disc, nil
@@ -120,21 +117,22 @@ func (disc *PluggableDiscovery) jsonDecodeLoop(in io.Reader, outChan chan<- *dis
 		disc.incomingMessagesError = err
 		disc.statusMutex.Unlock()
 		close(outChan)
+		// TODO: Try restarting process some times before closing it completely
 	}
+
 	for {
 		var msg discoveryMessage
 		if err := decoder.Decode(&msg); err != nil {
 			closeAndReportError(err)
 			return
 		}
-
 		if msg.EventType == "add" {
 			if msg.Port == nil {
 				closeAndReportError(errors.New("invalid 'add' message: missing port"))
 				return
 			}
 			disc.statusMutex.Lock()
-			disc.cachedPorts[msg.Port.Address] = msg.Port
+			disc.cachedPorts[msg.Port.Address+"|"+msg.Port.Protocol] = msg.Port
 			if disc.eventChan != nil {
 				disc.eventChan <- &Event{"add", msg.Port}
 			}
@@ -145,7 +143,7 @@ func (disc *PluggableDiscovery) jsonDecodeLoop(in io.Reader, outChan chan<- *dis
 				return
 			}
 			disc.statusMutex.Lock()
-			delete(disc.cachedPorts, msg.Port.Address)
+			delete(disc.cachedPorts, msg.Port.Address+"|"+msg.Port.Protocol)
 			if disc.eventChan != nil {
 				disc.eventChan <- &Event{"remove", msg.Port}
 			}
@@ -187,13 +185,49 @@ func (disc *PluggableDiscovery) waitMessage(timeout time.Duration) (*discoveryMe
 }
 
 func (disc *PluggableDiscovery) sendCommand(command string) error {
-	if n, err := disc.outgoingCommandsPipe.Write([]byte(command)); err != nil {
-		return err
-	} else if n < len(command) {
-		return disc.sendCommand(command[n:])
-	} else {
-		return nil
+	data := []byte(command)
+	for {
+		n, err := disc.outgoingCommandsPipe.Write(data)
+		if err != nil {
+			return err
+		}
+		if n == len(data) {
+			return nil
+		}
+		data = data[n:]
 	}
+}
+
+func (disc *PluggableDiscovery) runProcess() error {
+	if err := disc.process.Start(); err != nil {
+		return err
+	}
+	disc.statusMutex.Lock()
+	defer disc.statusMutex.Unlock()
+	disc.alive = true
+	return nil
+}
+
+// Run starts the discovery executable process and sends the HELLO command to the discovery to agree on the
+// pluggable discovery protocol. This must be the first command to run in the communication with the discovery.
+func (disc *PluggableDiscovery) Run() error {
+	if err := disc.runProcess(); err != nil {
+		return err
+	}
+
+	if err := disc.sendCommand("HELLO 1 \"arduino-cli " + globals.VersionInfo.VersionString + "\"\n"); err != nil {
+		return err
+	}
+	if msg, err := disc.waitMessage(time.Second * 10); err != nil {
+		return err
+	} else if msg.EventType != "hello" {
+		return errors.Errorf("communication out of sync, expected 'hello', received '%s'", msg.EventType)
+	} else if msg.Message != "OK" || msg.Error {
+		return errors.Errorf("command failed: %s", msg.Message)
+	} else if msg.ProtocolVersion > 1 {
+		return errors.Errorf("protocol version not supported: requested 1, got %d", msg.ProtocolVersion)
+	}
+	return nil
 }
 
 // Start initializes and start the discovery internal subroutines. This command must be
@@ -206,7 +240,7 @@ func (disc *PluggableDiscovery) Start() error {
 		return err
 	} else if msg.EventType != "start" {
 		return errors.Errorf("communication out of sync, expected 'start', received '%s'", msg.EventType)
-	} else if msg.Message != "OK" {
+	} else if msg.Message != "OK" || msg.Error {
 		return errors.Errorf("command failed: %s", msg.Message)
 	}
 	return nil
@@ -223,9 +257,16 @@ func (disc *PluggableDiscovery) Stop() error {
 		return err
 	} else if msg.EventType != "stop" {
 		return errors.Errorf("communication out of sync, expected 'stop', received '%s'", msg.EventType)
-	} else if msg.Message != "OK" {
+	} else if msg.Message != "OK" || msg.Error {
 		return errors.Errorf("command failed: %s", msg.Message)
 	}
+	disc.statusMutex.Lock()
+	defer disc.statusMutex.Unlock()
+	if disc.eventChan != nil {
+		close(disc.eventChan)
+		disc.eventChan = nil
+	}
+	disc.eventsMode = false
 	return nil
 }
 
@@ -238,9 +279,16 @@ func (disc *PluggableDiscovery) Quit() error {
 		return err
 	} else if msg.EventType != "quit" {
 		return errors.Errorf("communication out of sync, expected 'quit', received '%s'", msg.EventType)
-	} else if msg.Message != "OK" {
+	} else if msg.Message != "OK" || msg.Error {
 		return errors.Errorf("command failed: %s", msg.Message)
 	}
+	disc.statusMutex.Lock()
+	defer disc.statusMutex.Unlock()
+	if disc.eventChan != nil {
+		close(disc.eventChan)
+		disc.eventChan = nil
+	}
+	disc.alive = false
 	return nil
 }
 
@@ -254,6 +302,8 @@ func (disc *PluggableDiscovery) List() ([]*Port, error) {
 		return nil, err
 	} else if msg.EventType != "list" {
 		return nil, errors.Errorf("communication out of sync, expected 'list', received '%s'", msg.EventType)
+	} else if msg.Error {
+		return nil, errors.Errorf("command failed: %s", msg.Message)
 	} else {
 		return msg.Ports, nil
 	}
@@ -263,9 +313,14 @@ func (disc *PluggableDiscovery) List() ([]*Port, error) {
 // The event channel must be consumed as quickly as possible since it may block the
 // discovery if it becomes full. The channel size is configurable.
 func (disc *PluggableDiscovery) EventChannel(size int) <-chan *Event {
-	c := make(chan *Event, size)
 	disc.statusMutex.Lock()
 	defer disc.statusMutex.Unlock()
+	if disc.eventChan != nil {
+		// In case there is already an existing event channel in use we close it
+		// before creating a new one.
+		close(disc.eventChan)
+	}
+	c := make(chan *Event, size)
 	disc.eventChan = c
 	return c
 }
@@ -285,7 +340,13 @@ func (disc *PluggableDiscovery) StartSync() error {
 		return err
 	}
 
-	// START_SYNC does not give any response
+	if msg, err := disc.waitMessage(time.Second * 10); err != nil {
+		return err
+	} else if msg.EventType != "start_sync" {
+		return errors.Errorf("communication out of sync, expected 'start_sync', received '%s'", msg.EventType)
+	} else if msg.Message != "OK" || msg.Error {
+		return errors.Errorf("command failed: %s", msg.Message)
+	}
 
 	disc.eventsMode = true
 	disc.cachedPorts = map[string]*Port{}

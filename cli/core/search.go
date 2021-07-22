@@ -17,9 +17,9 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path"
-	"sort"
 	"strings"
 	"time"
 
@@ -61,20 +61,24 @@ func initSearchCommand() *cobra.Command {
 const indexUpdateInterval = "24h"
 
 func runSearchCommand(cmd *cobra.Command, args []string) {
-	inst, err := instance.CreateInstance()
-	if err != nil {
-		feedback.Errorf("Error searching for platforms: %v", err)
+	inst, status := instance.Create()
+	if status != nil {
+		feedback.Errorf("Error creating instance: %v", status)
 		os.Exit(errorcodes.ErrGeneric)
 	}
 
 	if indexesNeedUpdating(indexUpdateInterval) {
-		_, err = commands.UpdateIndex(context.Background(), &rpc.UpdateIndexRequest{
+		_, err := commands.UpdateIndex(context.Background(), &rpc.UpdateIndexRequest{
 			Instance: inst,
 		}, output.ProgressBar())
 		if err != nil {
 			feedback.Errorf("Error updating index: %v", err)
 			os.Exit(errorcodes.ErrGeneric)
 		}
+	}
+
+	for _, err := range instance.Init(inst) {
+		feedback.Errorf("Error initializing instance: %v", err)
 	}
 
 	arguments := strings.ToLower(strings.Join(args, " "))
@@ -108,11 +112,12 @@ func (sr searchResults) String() string {
 	if len(sr.platforms) > 0 {
 		t := table.New()
 		t.SetHeader("ID", "Version", "Name")
-		sort.Slice(sr.platforms, func(i, j int) bool {
-			return sr.platforms[i].Id < sr.platforms[j].Id
-		})
 		for _, item := range sr.platforms {
-			t.AddRow(item.GetId(), item.GetLatest(), item.GetName())
+			name := item.GetName()
+			if item.Deprecated {
+				name = fmt.Sprintf("[DEPRECATED] %s", name)
+			}
+			t.AddRow(item.GetId(), item.GetLatest(), name)
 		}
 		return t.Render()
 	}

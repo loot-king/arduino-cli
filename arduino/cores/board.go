@@ -24,9 +24,10 @@ import (
 
 // Board represents a board loaded from an installed platform
 type Board struct {
-	BoardID         string
-	Properties      *properties.Map  `json:"-"`
-	PlatformRelease *PlatformRelease `json:"-"`
+	BoardID                  string
+	Properties               *properties.Map  `json:"-"`
+	PlatformRelease          *PlatformRelease `json:"-"`
+	identificationProperties []*properties.Map
 }
 
 // HasUsbID returns true if the board match the usb vid and pid parameters
@@ -138,4 +139,36 @@ func (b *Board) GeneratePropertiesForConfiguration(config string) (*properties.M
 		return nil, fmt.Errorf("parsing fqbn: %s", err)
 	}
 	return b.GetBuildProperties(fqbn.Configs)
+}
+
+// GetIdentificationProperties calculates and returns a list of properties sets
+// containing the properties required to identify the board. The returned sets
+// must not be changed by the caller.
+func (b *Board) GetIdentificationProperties() []*properties.Map {
+	if b.identificationProperties == nil {
+		b.identificationProperties = b.Properties.ExtractSubIndexSets("upload_port")
+	}
+	return b.identificationProperties
+}
+
+// IsBoardMatchingIDProperties returns true if the board match the given
+// identification properties
+func (b *Board) IsBoardMatchingIDProperties(query *properties.Map) bool {
+	// check checks if the given set of properties p match the "query"
+	check := func(p *properties.Map) bool {
+		for k, v := range p.AsMap() {
+			if !strings.EqualFold(query.Get(k), v) {
+				return false
+			}
+		}
+		return true
+	}
+
+	// First check the identification properties with sub index "upload_port.N.xxx"
+	for _, idProps := range b.GetIdentificationProperties() {
+		if check(idProps) {
+			return true
+		}
+	}
+	return false
 }

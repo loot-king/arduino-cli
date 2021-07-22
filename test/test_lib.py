@@ -56,7 +56,7 @@ def test_list(run_command):
     result = run_command("lib list")
     assert result.ok
     assert "" == result.stderr
-    assert "No libraries installed." == result.stdout.strip()
+    assert "No libraries installed." in result.stdout.strip()
     result = run_command("lib list --format json")
     assert result.ok
     assert "" == result.stderr
@@ -404,7 +404,9 @@ def test_install_with_zip_path(run_command, data_dir, downloads_dir):
 def test_update_index(run_command):
     result = run_command("lib update-index")
     assert result.ok
-    assert "Updating index: library_index.json downloaded" == result.stdout.splitlines()[-1].strip()
+    lines = [l.strip() for l in result.stdout.splitlines()]
+    assert "Updating index: library_index.json.gz downloaded" in lines
+    assert "Updating index: library_index.json.sig downloaded" in lines
 
 
 def test_uninstall(run_command):
@@ -454,7 +456,8 @@ def test_search(run_command):
     result = run_command("lib search --names")
     assert result.ok
     lines = [l.strip() for l in result.stdout.strip().splitlines()]
-    assert "Updating index: library_index.json downloaded" in lines
+    assert "Updating index: library_index.json.gz downloaded" in lines
+    assert "Updating index: library_index.json.sig downloaded" in lines
     libs = [l[6:].strip('"') for l in lines if "Name:" in l]
 
     expected = {"WiFi101", "WiFi101OTA", "Firebase Arduino based on WiFi101"}
@@ -517,7 +520,7 @@ def test_lib_list_with_updatable_flag(run_command):
     result = run_command("lib list --updatable")
     assert result.ok
     assert "" == result.stderr
-    assert "No updates available." == result.stdout.strip()
+    assert "No updates available." in result.stdout.strip()
     # No library to update in json
     result = run_command("lib list --updatable --format json")
     assert result.ok

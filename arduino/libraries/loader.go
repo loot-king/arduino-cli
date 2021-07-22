@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/arduino/arduino-cli/arduino/sketches"
+	"github.com/arduino/arduino-cli/arduino/sketch"
 	"github.com/arduino/go-paths-helper"
 	properties "github.com/arduino/go-properties-orderedmap"
 	"github.com/pkg/errors"
@@ -67,7 +67,7 @@ func makeNewLibrary(libraryDir *paths.Path, location LibraryLocation) (*Library,
 
 	library := &Library{}
 	library.Location = location
-	library.InstallDir = libraryDir
+	library.InstallDir = libraryDir.Canonical()
 	if libraryDir.Join("src").Exist() {
 		library.Layout = RecursiveLayout
 		library.SourceDir = libraryDir.Join("src")
@@ -127,7 +127,7 @@ func makeNewLibrary(libraryDir *paths.Path, location LibraryLocation) (*Library,
 
 func makeLegacyLibrary(path *paths.Path, location LibraryLocation) (*Library, error) {
 	library := &Library{
-		InstallDir:    path,
+		InstallDir:    path.Canonical(),
 		Location:      location,
 		SourceDir:     path,
 		Layout:        FlatLayout,
@@ -173,7 +173,7 @@ func addExamplesToPathList(examplesPath *paths.Path, list *paths.PathList) error
 		return err
 	}
 	for _, file := range files {
-		_, err := sketches.NewSketchFromPath(file)
+		_, err := sketch.New(file)
 		if err == nil {
 			list.Add(file)
 		} else if file.IsDir() {

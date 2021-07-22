@@ -55,11 +55,7 @@ func initDetailsCommand() *cobra.Command {
 }
 
 func runDetailsCommand(cmd *cobra.Command, args []string) {
-	inst, err := instance.CreateInstance()
-	if err != nil {
-		feedback.Errorf(tr("Error getting board details: %v"), err)
-		os.Exit(errorcodes.ErrGeneric)
-	}
+	inst := instance.CreateAndInit()
 
 	// remove once `board details <fqbn>` is removed
 	if fqbn == "" && len(args) > 0 {
@@ -134,13 +130,13 @@ func (dr detailsResult) String() string {
 			table.NewCell("✔", color.New(color.FgGreen)))
 	}
 
-	for i, idp := range details.IdentificationPrefs {
-		if i == 0 {
-			t.AddRow() // get some space from above
-			t.AddRow(tr("Identification properties:"), "VID:"+idp.UsbId.Vid+" PID:"+idp.UsbId.Pid)
-			continue
+	for _, idp := range details.GetIdentificationProperties() {
+		t.AddRow() // get some space from above
+		header := tr("Identification properties:")
+		for k, v := range idp.GetProperties() {
+			t.AddRow(header, k+"="+v)
+			header = ""
 		}
-		t.AddRow("", "VID:"+idp.UsbId.Vid+" PID:"+idp.UsbId.Pid)
 	}
 
 	t.AddRow() // get some space from above
@@ -163,14 +159,14 @@ func (dr detailsResult) String() string {
 
 	t.AddRow() // get some space from above
 	for _, tool := range details.ToolsDependencies {
-		t.AddRow(tr("Required tool:"), tool.Packager+":"+tool.Name, "", tool.Version)
+		t.AddRow(tr("Required tool:"), tool.Packager+":"+tool.Name, tool.Version)
 		if showFullDetails {
 			for _, sys := range tool.Systems {
-				t.AddRow("", tr("OS:"), "", sys.Host)
-				t.AddRow("", tr("File:"), "", sys.ArchiveFilename)
-				t.AddRow("", tr("Size (bytes):"), "", fmt.Sprint(sys.Size))
-				t.AddRow("", tr("Checksum:"), "", sys.Checksum)
-				t.AddRow("", "URL:", "", sys.Url)
+				t.AddRow("", tr("OS:"), sys.Host)
+				t.AddRow("", tr("File:"), sys.ArchiveFilename)
+				t.AddRow("", tr("Size (bytes):"), fmt.Sprint(sys.Size))
+				t.AddRow("", tr("Checksum:"), sys.Checksum)
+				t.AddRow("", "URL:", sys.Url)
 				t.AddRow() // get some space from above
 			}
 		}

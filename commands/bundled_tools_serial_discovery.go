@@ -16,31 +16,26 @@
 package commands
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/arduino/arduino-cli/arduino/cores"
 	"github.com/arduino/arduino-cli/arduino/cores/packagemanager"
 	"github.com/arduino/arduino-cli/arduino/discovery"
 	"github.com/arduino/arduino-cli/arduino/resources"
-	"github.com/arduino/arduino-cli/executils"
-	"github.com/arduino/go-properties-orderedmap"
-	"github.com/pkg/errors"
 	semver "go.bug.st/relaxed-semver"
 )
 
 var (
-	serialDiscoveryVersion = semver.ParseRelaxed("1.2.1")
+	serialDiscoveryVersion = semver.ParseRelaxed("1.3.0-rc1")
 	serialDiscoveryFlavors = []*cores.Flavor{
 		{
 			OS: "i686-pc-linux-gnu",
 			Resource: &resources.DownloadResource{
 				ArchiveFileName: fmt.Sprintf("serial-discovery_v%s_Linux_32bit.tar.bz2", serialDiscoveryVersion),
 				URL:             fmt.Sprintf("https://downloads.arduino.cc/discovery/serial-discovery/serial-discovery_v%s_Linux_32bit.tar.gz", serialDiscoveryVersion),
-				Size:            1623562,
-				Checksum:        "SHA-256:624996c2483cd66dc318e9559b9e25754180514a794acd390b4c0de58742d335",
+				Size:            1633143,
+				Checksum:        "SHA-256:2fb17882018f3eefeaf933673cbc42cea83ce739503880ccc7f9cf521de0e513",
 				CachePath:       "tools",
 			},
 		},
@@ -49,8 +44,8 @@ var (
 			Resource: &resources.DownloadResource{
 				ArchiveFileName: fmt.Sprintf("serial-discovery_v%s_Linux_64bit.tar.bz2", serialDiscoveryVersion),
 				URL:             fmt.Sprintf("https://downloads.arduino.cc/discovery/serial-discovery/serial-discovery_v%s_Linux_64bit.tar.gz", serialDiscoveryVersion),
-				Size:            1679556,
-				Checksum:        "SHA-256:fca394dde79838cdd4cbeaa4a249237c95869c7d39ec5c778ecdc76d227679ef",
+				Size:            1688362,
+				Checksum:        "SHA-256:e0e55ea9c5e05f12af5d89dc3a69d63e12211f54122b4bf45a7cab9f0a6f89e5",
 				CachePath:       "tools",
 			},
 		},
@@ -59,8 +54,8 @@ var (
 			Resource: &resources.DownloadResource{
 				ArchiveFileName: fmt.Sprintf("serial-discovery_v%s_Windows_32bit.zip", serialDiscoveryVersion),
 				URL:             fmt.Sprintf("https://downloads.arduino.cc/discovery/serial-discovery/serial-discovery_v%s_Windows_32bit.zip", serialDiscoveryVersion),
-				Size:            1735085,
-				Checksum:        "SHA-256:c2d8e92e790862ee3374810121a588c9e8c6e6ff8100112912c05312e04e7570",
+				Size:            1742668,
+				Checksum:        "SHA-256:4acfe521d6fc3b29643ab69ced246d7dd20637772fc79fc3e509829c18290d90",
 				CachePath:       "tools",
 			},
 		},
@@ -69,8 +64,8 @@ var (
 			Resource: &resources.DownloadResource{
 				ArchiveFileName: fmt.Sprintf("serial-discovery_v%s_Windows_64bit.zip", serialDiscoveryVersion),
 				URL:             fmt.Sprintf("https://downloads.arduino.cc/discovery/serial-discovery/serial-discovery_v%s_Windows_64bit.zip", serialDiscoveryVersion),
-				Size:            1700849,
-				Checksum:        "SHA-256:4da007d89bb5134e7c44a70d23b026470ee0466912db16254a2a6f431cb7d9a4",
+				Size:            1709333,
+				Checksum:        "SHA-256:82b2edea04f7c97b98cbb04de95ec48be95de64fa5f196d730dc824d7558b952",
 				CachePath:       "tools",
 			},
 		},
@@ -79,8 +74,8 @@ var (
 			Resource: &resources.DownloadResource{
 				ArchiveFileName: fmt.Sprintf("serial-discovery_v%s_macOS_64bit.tar.bz2", serialDiscoveryVersion),
 				URL:             fmt.Sprintf("https://downloads.arduino.cc/discovery/serial-discovery/serial-discovery_v%s_macOS_64bit.tar.gz", serialDiscoveryVersion),
-				Size:            872913,
-				Checksum:        "SHA-256:c3dfb2d20b1fe839ddfba3567377200d335a93eff19b0a0f553db76d5a7e2dbd",
+				Size:            964596,
+				Checksum:        "SHA-256:ec4be0f5c1ed6af3f31bb01ed6a5433274a76a1dc7cb68d39813b2b0475d7337",
 				CachePath:       "tools",
 			},
 		},
@@ -89,8 +84,8 @@ var (
 			Resource: &resources.DownloadResource{
 				ArchiveFileName: fmt.Sprintf("serial-discovery_v%s_Linux_ARMv6.tar.bz2", serialDiscoveryVersion),
 				URL:             fmt.Sprintf("https://downloads.arduino.cc/discovery/serial-discovery/serial-discovery_v%s_Linux_ARMv6.tar.gz", serialDiscoveryVersion),
-				Size:            1560586,
-				Checksum:        "SHA-256:dd1687748c59ba94631f63a1f8ebee7ec21f5f40c01f5b0510f02c72c71d2d66",
+				Size:            1570847,
+				Checksum:        "SHA-256:9341e2541ad41ee2cdaad1e8d851254c8bce63c937cdafd57db7d1439d8ced59",
 				CachePath:       "tools",
 			},
 		},
@@ -99,119 +94,27 @@ var (
 			Resource: &resources.DownloadResource{
 				ArchiveFileName: fmt.Sprintf("serial-discovery_v%s_Linux_ARM64.tar.bz2", serialDiscoveryVersion),
 				URL:             fmt.Sprintf("https://downloads.arduino.cc/discovery/serial-discovery/serial-discovery_v%s_Linux_ARM64.tar.gz", serialDiscoveryVersion),
-				Size:            1573778,
-				Checksum:        "SHA-256:3f44b5932dcfc2f01a72536d19080e45976d87c0652fcfbe75a87451327faa1f",
+				Size:            1580108,
+				Checksum:        "SHA-256:1da38f94be8db69bbe26d6a95692b665f6bc9bf89aa62b58d4e4cfb0f7fd8733",
 				CachePath:       "tools",
 			},
 		},
 	}
 )
 
-// BoardPort is a generic port descriptor
-type BoardPort struct {
-	Address             string          `json:"address"`
-	Label               string          `json:"label"`
-	Prefs               *properties.Map `json:"prefs"`
-	IdentificationPrefs *properties.Map `json:"identificationPrefs"`
-	Protocol            string          `json:"protocol"`
-	ProtocolLabel       string          `json:"protocolLabel"`
-}
-
-type eventJSON struct {
-	EventType string       `json:"eventType,required"`
-	Ports     []*BoardPort `json:"ports"`
-}
-
 var listBoardMutex sync.Mutex
 
 // ListBoards foo
-func ListBoards(pm *packagemanager.PackageManager) ([]*BoardPort, error) {
+func ListBoards(pm *packagemanager.PackageManager) ([]*discovery.Port, error) {
 	// ensure the connection to the discoverer is unique to avoid messing up
 	// the messages exchanged
 	listBoardMutex.Lock()
 	defer listBoardMutex.Unlock()
 
 	// get the bundled tool
-	t, err := getBuiltinSerialDiscoveryTool(pm)
-	if err != nil {
-		return nil, err
-	}
+	t := getBuiltinSerialDiscoveryTool(pm)
 
 	// determine if it's installed
-	if !t.IsInstalled() {
-		return nil, fmt.Errorf("missing serial-discovery tool")
-	}
-
-	// build the command to be executed
-	cmd, err := executils.NewProcessFromPath(t.InstallDir.Join("serial-discovery"))
-	if err != nil {
-		return nil, errors.Wrap(err, "creating discovery process")
-	}
-
-	// attach in/out pipes to the process
-	in, err := cmd.StdinPipe()
-	if err != nil {
-		return nil, fmt.Errorf("creating stdin pipe for discovery: %s", err)
-	}
-
-	out, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, fmt.Errorf("creating stdout pipe for discovery: %s", err)
-	}
-	outJSON := json.NewDecoder(out)
-
-	// start the process
-	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("starting discovery process: %s", err)
-	}
-
-	// send the LIST command
-	if _, err := in.Write([]byte("LIST\n")); err != nil {
-		return nil, fmt.Errorf("sending LIST command to discovery: %s", err)
-	}
-
-	// read the response from the pipe
-	decodeResult := make(chan error)
-	var event eventJSON
-	go func() {
-		decodeResult <- outJSON.Decode(&event)
-	}()
-
-	var finalError error
-	var retVal []*BoardPort
-
-	// wait for the response
-	select {
-	case err := <-decodeResult:
-		if err == nil {
-			retVal = event.Ports
-		} else {
-			finalError = err
-		}
-	case <-time.After(10 * time.Second):
-		finalError = fmt.Errorf("decoding LIST command: timeout")
-	}
-
-	// tell the process to quit
-	in.Write([]byte("QUIT\n"))
-	in.Close()
-	out.Close()
-	// kill the process if it takes too long to quit
-	time.AfterFunc(time.Second, func() {
-		cmd.Kill()
-	})
-	cmd.Wait()
-
-	return retVal, finalError
-}
-
-// WatchListBoards returns a channel that receives events from the bundled discovery tool
-func WatchListBoards(pm *packagemanager.PackageManager) (<-chan *discovery.Event, error) {
-	t, err := getBuiltinSerialDiscoveryTool(pm)
-	if err != nil {
-		return nil, err
-	}
-
 	if !t.IsInstalled() {
 		return nil, fmt.Errorf("missing serial-discovery tool")
 	}
@@ -219,6 +122,39 @@ func WatchListBoards(pm *packagemanager.PackageManager) (<-chan *discovery.Event
 	disc, err := discovery.New("serial-discovery", t.InstallDir.Join(t.Tool.Name).String())
 	if err != nil {
 		return nil, err
+	}
+	defer disc.Quit()
+
+	if err = disc.Run(); err != nil {
+		return nil, fmt.Errorf("starting discovery: %v", err)
+	}
+
+	if err = disc.Start(); err != nil {
+		return nil, fmt.Errorf("starting discovery: %v", err)
+	}
+
+	res, err := disc.List()
+	if err != nil {
+		return nil, fmt.Errorf("getting port list from discovery: %v", err)
+	}
+
+	return res, nil
+}
+
+// WatchListBoards returns a channel that receives events from the bundled discovery tool
+func WatchListBoards(pm *packagemanager.PackageManager) (<-chan *discovery.Event, error) {
+	t := getBuiltinSerialDiscoveryTool(pm)
+	if !t.IsInstalled() {
+		return nil, fmt.Errorf("missing serial-discovery tool")
+	}
+
+	disc, err := discovery.New("serial-discovery", t.InstallDir.Join(t.Tool.Name).String())
+	if err != nil {
+		return nil, err
+	}
+
+	if err = disc.Run(); err != nil {
+		return nil, fmt.Errorf("starting discovery: %v", err)
 	}
 
 	if err = disc.Start(); err != nil {
@@ -232,10 +168,10 @@ func WatchListBoards(pm *packagemanager.PackageManager) (<-chan *discovery.Event
 	return disc.EventChannel(10), nil
 }
 
-func getBuiltinSerialDiscoveryTool(pm *packagemanager.PackageManager) (*cores.ToolRelease, error) {
+func getBuiltinSerialDiscoveryTool(pm *packagemanager.PackageManager) *cores.ToolRelease {
 	builtinPackage := pm.Packages.GetOrCreatePackage("builtin")
 	serialDiscoveryTool := builtinPackage.GetOrCreateTool("serial-discovery")
 	serialDiscoveryToolRel := serialDiscoveryTool.GetOrCreateRelease(serialDiscoveryVersion)
 	serialDiscoveryToolRel.Flavors = serialDiscoveryFlavors
-	return pm.Package("builtin").Tool("serial-discovery").Release(serialDiscoveryVersion).Get()
+	return serialDiscoveryToolRel
 }

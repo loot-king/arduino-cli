@@ -132,7 +132,7 @@ def test_compile_with_sketch_with_symlink_selfloop(run_command, data_dir):
     result = run_command("compile -b {fqbn} {sketch_path}".format(fqbn=fqbn, sketch_path=sketch_path))
     # The assertion is a bit relaxed in this case because win behaves differently from macOs and linux
     # returning a different error detailed message
-    assert "Error during sketch processing" in result.stderr
+    assert "Error during build: opening sketch" in result.stderr
     assert not result.ok
 
     sketch_name = "CompileIntegrationTestSymlinkDirLoop"
@@ -152,9 +152,9 @@ def test_compile_with_sketch_with_symlink_selfloop(run_command, data_dir):
 
     # Build sketch for arduino:avr:uno
     result = run_command("compile -b {fqbn} {sketch_path}".format(fqbn=fqbn, sketch_path=sketch_path))
-    # The assertion is a bit relaxed also in this case because macOS behaves differently from win and linux:
-    # the cli does not follow recursively the symlink til breaking
-    assert "Error during sketch processing" in result.stderr
+    # The assertion is a bit relaxed in this case because win behaves differently from macOs and linux
+    # returning a different error detailed message
+    assert "Error during build: opening sketch" in result.stderr
     assert not result.ok
 
 
@@ -544,9 +544,9 @@ def test_compile_with_invalid_url(run_command, data_dir):
 
     # Verifies compilation fails cause of missing local index file
     res = run_command(f'compile -b {fqbn} "{sketch_path}"')
-    assert res.failed
+    assert res.ok
     lines = [l.strip() for l in res.stderr.splitlines()]
-    assert "Error creating instance: error loading platform index:" in lines
+    assert "Error initializing instance: Loading index file: loading json index file" in lines[0]
     expected_index_file = Path(data_dir, "package_example_index.json")
     assert f"loading json index file {expected_index_file}: " + f"open {expected_index_file}:" in lines[-1]
 
@@ -581,7 +581,7 @@ def test_compile_with_archives_and_long_paths(run_command):
     assert run_command("update")
 
     # Install core to compile
-    assert run_command("core install esp8266:esp8266")
+    assert run_command("core install esp8266:esp8266@2.7.4")
 
     # Install test library
     assert run_command("lib install ArduinoIoTCloud")
@@ -996,3 +996,162 @@ def test_recompile_with_different_library(run_command, data_dir):
     assert res.ok
     obj_path = build_dir / "libraries" / "WiFi101" / "WiFi.cpp.o"
     assert f"Using previously compiled file: {obj_path}" not in res.stdout
+
+
+def test_compile_with_conflicting_libraries_include(run_command, data_dir, copy_sketch):
+    assert run_command("update")
+
+    assert run_command("core install arduino:avr@1.8.3")
+
+    # Install conflicting libraries
+    git_url = "https://github.com/pstolarz/OneWireNg.git"
+    one_wire_ng_lib_path = Path(data_dir, "libraries", "onewireng_0_8_1")
+    assert Repo.clone_from(git_url, one_wire_ng_lib_path, multi_options=["-b 0.8.1"])
+
+    git_url = "https://github.com/PaulStoffregen/OneWire.git"
+    one_wire_lib_path = Path(data_dir, "libraries", "onewire_2_3_5")
+    assert Repo.clone_from(git_url, one_wire_lib_path, multi_options=["-b v2.3.5"])
+
+    sketch_path = copy_sketch("sketch_with_conflicting_libraries_include")
+    fqbn = "arduino:avr:uno"
+
+    res = run_command(f"compile -b {fqbn} {sketch_path} --verbose")
+    assert res.ok
+    expected_output = [
+        'Multiple libraries were found for "OneWire.h"',
+        f" Used: {one_wire_lib_path}",
+        f" Not used: {one_wire_ng_lib_path}",
+    ]
+    assert "\n".join(expected_output) in res.stdout
+
+
+def test_compile_with_invalid_build_options_json(run_command, data_dir):
+    assert run_command("update")
+
+    assert run_command("core install arduino:avr@1.8.3")
+
+    sketch_name = "CompileInvalidBuildOptionsJson"
+    sketch_path = Path(data_dir, sketch_name)
+    fqbn = "arduino:avr:uno"
+
+    # Create a test sketch
+    assert run_command(f"sketch new {sketch_path}")
+
+    # Get the build directory
+    sketch_path_md5 = hashlib.md5(bytes(sketch_path)).hexdigest().upper()
+    build_dir = Path(tempfile.gettempdir(), f"arduino-sketch-{sketch_path_md5}")
+
+    assert run_command(f"compile -b {fqbn} {sketch_path} --verbose")
+
+    # Breaks the build.options.json file
+    build_options_json = build_dir / "build.options.json"
+    with open(build_options_json, "w") as f:
+        f.write("invalid json")
+
+    assert run_command(f"compile -b {fqbn} {sketch_path} --verbose")
+
+
+def test_compile_with_esp32_bundled_libraries(run_command, data_dir, copy_sketch):
+    # Some esp cores have have bundled libraries that are optimize for that architecture,
+    # it might happen that if the user has a library with the same name installed conflicts
+    # can ensue and the wrong library is used for compilation, thus it fails.
+    # This happens because for "historical" reasons these platform have their "name" key
+    # in the "library.properties" flag suffixed with "(esp32)" or similar even though that
+    # doesn't respect the libraries specification.
+    # https://arduino.github.io/arduino-cli/latest/library-specification/#libraryproperties-file-format
+    #
+    # The reason those libraries have these suffixes is to avoid an annoying bug in the Java IDE
+    # that would have caused the libraries that are both bundled with the core and the Java IDE to be
+    # always marked as updatable. For more info see: https://github.com/arduino/Arduino/issues/4189
+    assert run_command("update")
+
+    # Update index with esp32 core and install it
+    url = "https://dl.espressif.com/dl/package_esp32_index.json"
+    core_version = "1.0.6"
+    assert run_command(f"core update-index --additional-urls={url}")
+    assert run_command(f"core install esp32:esp32@{core_version} --additional-urls={url}")
+
+    # Install a library with the same name as one bundled with the core
+    assert run_command("lib install SD")
+
+    sketch_path = copy_sketch("sketch_with_sd_library")
+    fqbn = "esp32:esp32:esp32"
+
+    res = run_command(f"compile -b {fqbn} {sketch_path} --verbose")
+    assert res.failed
+
+    core_bundled_lib_path = Path(data_dir, "packages", "esp32", "hardware", "esp32", core_version, "libraries", "SD")
+    cli_installed_lib_path = Path(data_dir, "libraries", "SD")
+    expected_output = [
+        'Multiple libraries were found for "SD.h"',
+        f" Used: {core_bundled_lib_path}",
+        f" Not used: {cli_installed_lib_path}",
+    ]
+    assert "\n".join(expected_output) not in res.stdout
+
+
+def test_compile_with_esp8266_bundled_libraries(run_command, data_dir, copy_sketch):
+    # Some esp cores have have bundled libraries that are optimize for that architecture,
+    # it might happen that if the user has a library with the same name installed conflicts
+    # can ensue and the wrong library is used for compilation, thus it fails.
+    # This happens because for "historical" reasons these platform have their "name" key
+    # in the "library.properties" flag suffixed with "(esp32)" or similar even though that
+    # doesn't respect the libraries specification.
+    # https://arduino.github.io/arduino-cli/latest/library-specification/#libraryproperties-file-format
+    #
+    # The reason those libraries have these suffixes is to avoid an annoying bug in the Java IDE
+    # that would have caused the libraries that are both bundled with the core and the Java IDE to be
+    # always marked as updatable. For more info see: https://github.com/arduino/Arduino/issues/4189
+    assert run_command("update")
+
+    # Update index with esp8266 core and install it
+    url = "http://arduino.esp8266.com/stable/package_esp8266com_index.json"
+    core_version = "2.7.4"
+    assert run_command(f"core update-index --additional-urls={url}")
+    assert run_command(f"core install esp8266:esp8266@{core_version} --additional-urls={url}")
+
+    # Install a library with the same name as one bundled with the core
+    assert run_command("lib install SD")
+
+    sketch_path = copy_sketch("sketch_with_sd_library")
+    fqbn = "esp8266:esp8266:generic"
+
+    res = run_command(f"compile -b {fqbn} {sketch_path} --verbose")
+    assert res.failed
+
+    core_bundled_lib_path = Path(
+        data_dir, "packages", "esp8266", "hardware", "esp8266", core_version, "libraries", "SD"
+    )
+    cli_installed_lib_path = Path(data_dir, "libraries", "SD")
+    expected_output = [
+        'Multiple libraries were found for "SD.h"',
+        f" Used: {core_bundled_lib_path}",
+        f" Not used: {cli_installed_lib_path}",
+    ]
+    assert "\n".join(expected_output) not in res.stdout
+
+
+def test_compile_sketch_with_tpp_file_include(run_command, copy_sketch):
+    assert run_command("update")
+
+    # Download latest AVR
+    run_command("core install arduino:avr")
+
+    sketch_name = "sketch_with_tpp_file_include"
+    sketch_path = copy_sketch(sketch_name)
+    fqbn = "arduino:avr:uno"
+
+    assert run_command(f"compile -b {fqbn} {sketch_path} --verbose")
+
+
+def test_compile_sketch_with_ipp_file_include(run_command, copy_sketch):
+    assert run_command("update")
+
+    # Download latest AVR
+    run_command("core install arduino:avr")
+
+    sketch_name = "sketch_with_ipp_file_include"
+    sketch_path = copy_sketch(sketch_name)
+    fqbn = "arduino:avr:uno"
+
+    assert run_command(f"compile -b {fqbn} {sketch_path} --verbose")

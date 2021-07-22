@@ -21,7 +21,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/arduino/arduino-cli/arduino/sketches"
+	"github.com/arduino/arduino-cli/arduino/sketch"
 	"github.com/arduino/arduino-cli/cli/feedback"
 	"github.com/arduino/arduino-cli/cli/output"
 	"github.com/arduino/arduino-cli/configuration"
@@ -120,11 +120,7 @@ func NewCommand() *cobra.Command {
 }
 
 func run(cmd *cobra.Command, args []string) {
-	inst, err := instance.CreateInstance()
-	if err != nil {
-		feedback.Errorf("Error creating instance: %v", err)
-		os.Exit(errorcodes.ErrGeneric)
-	}
+	inst := instance.CreateAndInit()
 
 	var path *paths.Path
 	if len(args) > 0 {
@@ -134,7 +130,7 @@ func run(cmd *cobra.Command, args []string) {
 	sketchPath := initSketchPath(path)
 
 	// .pde files are still supported but deprecated, this warning urges the user to rename them
-	if files := sketches.CheckForPdeFiles(sketchPath); len(files) > 0 {
+	if files := sketch.CheckForPdeFiles(sketchPath); len(files) > 0 {
 		feedback.Error("Sketches with .pde extension are deprecated, please rename the following files to .ino:")
 		for _, f := range files {
 			feedback.Error(f)
@@ -183,6 +179,7 @@ func run(cmd *cobra.Command, args []string) {
 	compileErr := new(bytes.Buffer)
 	verboseCompile := configuration.Settings.GetString("logging.level") == "debug"
 	var compileRes *rpc.CompileResponse
+	var err error
 	if output.OutputFormat == "json" {
 		compileRes, err = compile.Compile(context.Background(), compileRequest, compileOut, compileErr, verboseCompile)
 	} else {

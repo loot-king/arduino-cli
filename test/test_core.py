@@ -14,6 +14,7 @@
 # a commercial license, send an email to license@arduino.cc.
 import os
 import datetime
+import shutil
 import time
 import platform
 import pytest
@@ -530,3 +531,220 @@ def test_core_search_update_index_delay(run_command, data_dir):
     res = run_command("core search")
     assert res.ok
     assert "Updating index" not in res.stdout
+
+
+def test_core_search_sorted_results(run_command, httpserver):
+    # Set up the server to serve our custom index file
+    test_index = Path(__file__).parent / "testdata" / "test_index.json"
+    httpserver.expect_request("/test_index.json").respond_with_data(test_index.read_text())
+
+    # update custom index
+    url = httpserver.url_for("/test_index.json")
+    assert run_command(f"core update-index --additional-urls={url}")
+
+    # This is done only to avoid index update output when calling core search
+    # since it automatically updates them if they're outdated and it makes it
+    # harder to parse the list of cores
+    assert run_command("core search")
+
+    # list all with additional url specified
+    result = run_command(f"core search --additional-urls={url}")
+    assert result.ok
+
+    lines = [l.strip().split(maxsplit=2) for l in result.stdout.strip().splitlines()][1:]
+    not_deprecated = [l for l in lines if not l[2].startswith("[DEPRECATED]")]
+    deprecated = [l for l in lines if l[2].startswith("[DEPRECATED]")]
+
+    # verify that results are already sorted correctly
+    assert not_deprecated == sorted(not_deprecated, key=lambda tokens: tokens[2].lower())
+    assert deprecated == sorted(deprecated, key=lambda tokens: tokens[2].lower())
+
+    # verify that deprecated platforms are the last ones
+    assert lines == not_deprecated + deprecated
+
+    # test same behaviour with json output
+    result = run_command(f"core search --additional-urls={url} --format=json")
+    assert result.ok
+
+    platforms = json.loads(result.stdout)
+    not_deprecated = [p for p in platforms if not p.get("deprecated")]
+    deprecated = [p for p in platforms if p.get("deprecated")]
+
+    # verify that results are already sorted correctly
+    assert not_deprecated == sorted(not_deprecated, key=lambda keys: keys["name"].lower())
+    assert deprecated == sorted(deprecated, key=lambda keys: keys["name"].lower())
+    # verify that deprecated platforms are the last ones
+    assert platforms == not_deprecated + deprecated
+
+
+def test_core_list_sorted_results(run_command, httpserver):
+    # Set up the server to serve our custom index file
+    test_index = Path(__file__).parent / "testdata" / "test_index.json"
+    httpserver.expect_request("/test_index.json").respond_with_data(test_index.read_text())
+
+    # update custom index
+    url = httpserver.url_for("/test_index.json")
+    assert run_command(f"core update-index --additional-urls={url}")
+
+    # install some core for testing
+    assert run_command(f"core install test:x86 Retrokits-RK002:arm Package:x86 --additional-urls={url}")
+
+    # list all with additional url specified
+    result = run_command(f"core list --additional-urls={url}")
+    assert result.ok
+
+    lines = [l.strip().split(maxsplit=3) for l in result.stdout.strip().splitlines()][1:]
+    assert len(lines) == 3
+    not_deprecated = [l for l in lines if not l[3].startswith("[DEPRECATED]")]
+    deprecated = [l for l in lines if l[3].startswith("[DEPRECATED]")]
+
+    # verify that results are already sorted correctly
+    assert not_deprecated == sorted(not_deprecated, key=lambda tokens: tokens[3].lower())
+    assert deprecated == sorted(deprecated, key=lambda tokens: tokens[3].lower())
+
+    # verify that deprecated platforms are the last ones
+    assert lines == not_deprecated + deprecated
+
+    # test same behaviour with json output
+    result = run_command(f"core list --additional-urls={url} --format=json")
+    assert result.ok
+
+    platforms = json.loads(result.stdout)
+    assert len(platforms) == 3
+    not_deprecated = [p for p in platforms if not p.get("deprecated")]
+    deprecated = [p for p in platforms if p.get("deprecated")]
+
+    # verify that results are already sorted correctly
+    assert not_deprecated == sorted(not_deprecated, key=lambda keys: keys["name"].lower())
+    assert deprecated == sorted(deprecated, key=lambda keys: keys["name"].lower())
+    # verify that deprecated platforms are the last ones
+    assert platforms == not_deprecated + deprecated
+
+
+def test_core_list_deprecated_platform_with_installed_json(run_command, httpserver, data_dir):
+    # Set up the server to serve our custom index file
+    test_index = Path(__file__).parent / "testdata" / "test_index.json"
+    httpserver.expect_request("/test_index.json").respond_with_data(test_index.read_text())
+
+    # update custom index
+    url = httpserver.url_for("/test_index.json")
+    assert run_command(f"core update-index --additional-urls={url}")
+
+    # install some core for testing
+    assert run_command(f"core install Package:x86 --additional-urls={url}")
+
+    installed_json_file = Path(data_dir, "packages", "Package", "hardware", "x86", "1.2.3", "installed.json")
+    assert installed_json_file.exists()
+    installed_json = json.load(installed_json_file.open("r"))
+    platform = installed_json["packages"][0]["platforms"][0]
+    del platform["deprecated"]
+    installed_json["packages"][0]["platforms"][0] = platform
+    with open(installed_json_file, "w") as f:
+        json.dump(installed_json, f)
+
+    # test same behaviour with json output
+    result = run_command(f"core list --additional-urls={url} --format=json")
+    assert result.ok
+
+    platforms = json.loads(result.stdout)
+    assert len(platforms) == 1
+    assert platforms[0]["deprecated"]
+
+
+def test_core_list_platform_without_platform_txt(run_command, data_dir):
+    assert run_command("update")
+
+    # Verifies no core is installed
+    res = run_command("core list --format json")
+    assert res.ok
+    cores = json.loads(res.stdout)
+    assert len(cores) == 0
+
+    # Simulates creation of a new core in the sketchbook hardware folder
+    # without a platforms.txt
+    test_boards_txt = Path(__file__).parent / "testdata" / "boards.local.txt"
+    boards_txt = Path(data_dir, "hardware", "some-packager", "some-arch", "boards.txt")
+    boards_txt.parent.mkdir(parents=True, exist_ok=True)
+    boards_txt.touch()
+    boards_txt.write_bytes(test_boards_txt.read_bytes())
+
+    # Verifies no core is installed
+    res = run_command("core list --format json")
+    assert res.ok
+    cores = json.loads(res.stdout)
+    assert len(cores) == 1
+    core = cores[0]
+    assert core["id"] == "some-packager:some-arch"
+    assert core["name"] == "some-packager-some-arch"
+
+
+def test_core_with_wrong_custom_board_options_is_loaded(run_command, data_dir):
+    test_platform_name = "platform_with_wrong_custom_board_options"
+    platform_install_dir = Path(data_dir, "hardware", "arduino-beta-dev", test_platform_name)
+    platform_install_dir.mkdir(parents=True)
+
+    # Install platform in Sketchbook hardware dir
+    shutil.copytree(
+        Path(__file__).parent / "testdata" / test_platform_name, platform_install_dir, dirs_exist_ok=True,
+    )
+
+    assert run_command("update")
+
+    res = run_command("core list --format json")
+    assert res.ok
+
+    cores = json.loads(res.stdout)
+    mapped = {core["id"]: core for core in cores}
+    assert len(mapped) == 1
+    # Verifies platform is loaded except excluding board with wrong options
+    assert "arduino-beta-dev:platform_with_wrong_custom_board_options" in mapped
+    boards = {b["fqbn"]: b for b in mapped["arduino-beta-dev:platform_with_wrong_custom_board_options"]["boards"]}
+    assert len(boards) == 1
+    # Verify board with malformed options is not loaded
+    assert "arduino-beta-dev:platform_with_wrong_custom_board_options:nessuno" not in boards
+    # Verify other board is loaded
+    assert "arduino-beta-dev:platform_with_wrong_custom_board_options:altra" in boards
+    # Verify warning is shown to user
+    assert (
+        "Error initializing instance: "
+        + "loading platform release arduino-beta-dev:platform_with_wrong_custom_board_options@4.2.0: "
+        + "loading boards: "
+        + "skipping loading of boards arduino-beta-dev:platform_with_wrong_custom_board_options:nessuno: "
+        + "malformed custom board options"
+    ) in res.stderr
+
+
+def test_core_with_missing_custom_board_options_is_loaded(run_command, data_dir):
+    test_platform_name = "platform_with_missing_custom_board_options"
+    platform_install_dir = Path(data_dir, "hardware", "arduino-beta-dev", test_platform_name)
+    platform_install_dir.mkdir(parents=True)
+
+    # Install platform in Sketchbook hardware dir
+    shutil.copytree(
+        Path(__file__).parent / "testdata" / test_platform_name, platform_install_dir, dirs_exist_ok=True,
+    )
+
+    assert run_command("update")
+
+    res = run_command("core list --format json")
+    assert res.ok
+
+    cores = json.loads(res.stdout)
+    mapped = {core["id"]: core for core in cores}
+    assert len(mapped) == 1
+    # Verifies platform is loaded except excluding board with missing options
+    assert "arduino-beta-dev:platform_with_missing_custom_board_options" in mapped
+    boards = {b["fqbn"]: b for b in mapped["arduino-beta-dev:platform_with_missing_custom_board_options"]["boards"]}
+    assert len(boards) == 1
+    # Verify board with malformed options is not loaded
+    assert "arduino-beta-dev:platform_with_missing_custom_board_options:nessuno" not in boards
+    # Verify other board is loaded
+    assert "arduino-beta-dev:platform_with_missing_custom_board_options:altra" in boards
+    # Verify warning is shown to user
+    assert (
+        "Error initializing instance: "
+        + "loading platform release arduino-beta-dev:platform_with_missing_custom_board_options@4.2.0: "
+        + "loading boards: "
+        + "skipping loading of boards arduino-beta-dev:platform_with_missing_custom_board_options:nessuno: "
+        + "malformed custom board options"
+    ) in res.stderr
