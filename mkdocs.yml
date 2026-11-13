@@ -1,17 +1,16 @@
-# Project information
+# Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/mkdocs/mkdocs.yml
+# See: https://www.mkdocs.org/user-guide/configuration/
+
 site_name: Arduino CLI
 site_description: Arduino Command Line Interface
 site_url: https://arduino.github.io/arduino-cli/
 
-# Repository
 repo_name: arduino/arduino-cli
 repo_url: https://github.com/arduino/arduino-cli
-edit_uri: ""
+edit_uri: blob/master/docs/
 
-# Copyright
 copyright: Copyright 2020 ARDUINO SA (http://www.arduino.cc/)
 
-# Theme
 theme:
   name: material
   logo: img/icon_mac_light.png
@@ -19,44 +18,31 @@ theme:
     primary: teal
     accent: orange
 
-# Extensions
 markdown_extensions:
-  - markdown.extensions.admonition
   - markdown.extensions.codehilite:
       guess_lang: false
-  - markdown.extensions.def_list
-  - markdown.extensions.footnotes
-  - markdown.extensions.meta
   - markdown.extensions.toc:
       permalink: true
-  - pymdownx.arithmatex
+  - mdx_truly_sane_lists:
+      nested_indent: 2
+      truly_sane: true
   - pymdownx.betterem:
       smart_enable: all
-  - pymdownx.caret
-  - pymdownx.critic
   - pymdownx.details
   - pymdownx.emoji:
-      emoji_index: !!python/name:pymdownx.emoji.twemoji
       emoji_generator: !!python/name:pymdownx.emoji.to_svg
-  - pymdownx.inlinehilite
-  - pymdownx.keys
+      emoji_index: !!python/name:pymdownx.emoji.twemoji
   - pymdownx.magiclink:
+      repo: arduino-cli
       repo_url_shorthand: true
       user: arduino
-      repo: arduino-cli
-  - pymdownx.mark
-  - pymdownx.smartsymbols
   - pymdownx.superfences
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
-  - mdx_truly_sane_lists:
-      nested_indent: 2
-      truly_sane: true
 
-# Navigation
 nav:
-  - Documentation Home: index.md
+  - Home: index.md
   - installation.md
   - UPGRADING.md
   - getting-started.md
@@ -70,6 +56,7 @@ nav:
       - board details: commands/arduino-cli_board_details.md
       - board list: commands/arduino-cli_board_list.md
       - board listall: commands/arduino-cli_board_listall.md
+      - board search: commands/arduino-cli_board_search.md
       - burn-bootloader: commands/arduino-cli_burn-bootloader.md
       - cache: commands/arduino-cli_cache.md
       - cache clean: commands/arduino-cli_cache_clean.md
@@ -80,6 +67,7 @@ nav:
       - config init: commands/arduino-cli_config_init.md
       - config add: commands/arduino-cli_config_add.md
       - config delete: commands/arduino-cli_config_delete.md
+      - config get: commands/arduino-cli_config_get.md
       - config remove: commands/arduino-cli_config_remove.md
       - config set: commands/arduino-cli_config_set.md
       - core: commands/arduino-cli_core.md
@@ -92,6 +80,7 @@ nav:
       - core upgrade: commands/arduino-cli_core_upgrade.md
       - daemon: commands/arduino-cli_daemon.md
       - debug: commands/arduino-cli_debug.md
+      - debug check: commands/arduino-cli_debug_check.md
       - lib: commands/arduino-cli_lib.md
       - lib deps: commands/arduino-cli_lib_deps.md
       - lib download: commands/arduino-cli_lib_download.md
@@ -102,6 +91,7 @@ nav:
       - lib uninstall: commands/arduino-cli_lib_uninstall.md
       - lib update-index: commands/arduino-cli_lib_update-index.md
       - lib upgrade: commands/arduino-cli_lib_upgrade.md
+      - monitor: commands/arduino-cli_monitor.md
       - outdated: commands/arduino-cli_outdated.md
       - sketch: commands/arduino-cli_sketch.md
       - sketch archive: commands/arduino-cli_sketch_archive.md
@@ -112,19 +102,20 @@ nav:
       - version: commands/arduino-cli_version.md
   - gRPC reference:
       - commands: rpc/commands.md
-      - monitor: rpc/monitor.md
-      - settings: rpc/settings.md
-      - debug: rpc/debug.md
   - configuration.md
   - Integration options: integration-options.md
   - sketch-build-process.md
   - sketch-specification.md
+  - sketch-project-file.md
   - library-specification.md
   - platform-specification.md
+  - Pluggable discovery specification: pluggable-discovery-specification.md
+  - Pluggable monitor specification: pluggable-monitor-specification.md
   - Package index specification: package_index_json-specification.md
+  - Guides:
+      - Secure boot: guides/secure-boot.md
+  - Backward compatibility policy: versioning.md
 
-extra_css:
-  - css/version-select.css
-
-extra_javascript:
-  - js/version-select.js
+extra:
+  version:
+    provider: mike

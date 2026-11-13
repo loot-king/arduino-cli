@@ -4,14 +4,14 @@ First of all, thanks for contributing! This document provides some basic guideli
 
 There are several ways you can get involved:
 
-| Type of contribution                              | Contribution method                                     |
-| ------------------------------------------------- | ------------------------------------------------------- |
-| - Support request<br/>- Question<br/>- Discussion | Post on the [Arduino Forum][forum]                      |
-| - Bug report<br/>- Feature request                | Issue report (read the [issue guidelines][issues])      |
-| Beta testing                                      | Try out the [nightly build][nightly]                    |
-| - Bug fix<br/>- Enhancement                       | Pull Request (read the [pull request guidelines][prs])  |
-| Translations for Arduino CLI                      | [transifex][translate]                                  |
-| Monetary                                          | - [Donate][donate]<br/>- [Buy official products][store] |
+| Type of contribution                              | Contribution method                                    |
+| ------------------------------------------------- | ------------------------------------------------------ |
+| - Support request<br/>- Question<br/>- Discussion | Post on the [Arduino Forum][forum]                     |
+| - Bug report<br/>- Feature request                | Issue report (read the [issue guidelines][issues])     |
+| Testing                                           | Try out the [nightly build][nightly]                   |
+| - Bug fix<br/>- Enhancement                       | Pull Request (read the [pull request guidelines][prs]) |
+| Translations for Arduino CLI                      | Use the [transifex][translate] platform                |
+| Monetary                                          | [Buy official products][store]                         |
 
 ## Issue Reports
 
@@ -70,18 +70,16 @@ submitting a PR:
 
 To build the Arduino CLI from sources you need the following tools to be available in your local environment:
 
-- [Go][1] version 1.14 or later
+- [Go][1] version 1.21 or later
 - [Taskfile][2] to help you run the most common tasks from the command line
 
 If you want to run integration tests you will also need:
 
 - A serial port with an Arduino board attached
-- A working [Python][3] environment, version 3.8 or later
 
 If you're working on the gRPC interface you will also have to:
 
-- download the [protoc][6] compiler
-- run `go get -u github.com/golang/protobuf/protoc-gen-go`
+- download and install [buf][6] our tool to compile and generate proto files
 
 ### Building the source code
 
@@ -109,13 +107,13 @@ task check
 To run unit tests:
 
 ```shell
-task test-unit
+task go:test
 ```
 
 To run integration tests (these will take some time and require special setup, see following paragraph):
 
 ```shell
-task test-integration
+task go:integration-test
 ```
 
 #### Running only some tests
@@ -123,15 +121,21 @@ task test-integration
 By default, all tests from all go packages are run. To run only unit tests from one or more specific packages, you can
 set the TARGETS environment variable, e.g.:
 
-    TARGETS=./arduino/cores/packagemanager task test-unit
+```
+TARGETS=./arduino/cores/packagemanager task go:test
+```
 
 Alternatively, to run only some specific test(s), you can specify a regex to match against the test function name:
 
-    TEST_REGEX='^TestTryBuild.*' task test-unit
+```
+TEST_REGEX='^TestTryBuild.*' task go:test
+```
 
 Both can be combined as well, typically to run only a specific test:
 
-    TEST_REGEX='^TestFindBoardWithFQBN$' TARGETS=./arduino/cores/packagemanager task test-unit
+```
+TEST_REGEX='^TestFindBoardWithFQBN$' TARGETS=./arduino/cores/packagemanager task go:test
+```
 
 ### Integration tests
 
@@ -157,66 +161,42 @@ the above requirements.
 
 ##### Software requirements for running integration tests:
 
-A working Python environment. Chances are that you already have Python installed in your system, if this is not the case
-you can [download][3] the official distribution or use the package manager provided by your Operating System.
-
-Some dependencies need to be installed before running the tests and to avoid polluting your global Python environment
-with dependencies that might be only used by the Arduino CLI, to do so we use [Poetry][poetry-website]. First you need
-to install it (you might need to `sudo` the following command):
-
-```shell
-pip3 install --user poetry
-```
-
-For more installation options read the [official documentation][poetry-docs].
+A working Go environment. Chances are that you already have Go installed in your system, if this is not the case you can
+[download][1] the official distribution or use the package manager provided by your Operating System.
 
 #### Running tests
 
 After the software requirements have been installed you should be able to run the tests with:
 
 ```shell
-task test-integration
+task go:integration-test
 ```
 
-This will automatically install the necessary dependencies, if not already installed, and run the integration tests
-automatically.
+This will run the integration tests automatically.
 
-To run specific modules you must run `pytest` from the virtual environment created by Poetry.
+To run specific packages you must run `go test`.
 
 ```shell
-poetry run pytest test/test_lib.py
+go test -v github.com/arduino/arduino-cli/internal/integrationtest/lib
 ```
 
 To run very specific test functions:
 
 ```shell
-poetry run pytest test/test_lib.py::test_list
+go test -v github.com/arduino/arduino-cli/internal/integrationtest/lib -run TestLibUpgradeCommand
 ```
 
-You can avoid writing the `poetry run` prefix each time by creating a new shell inside the virtual environment:
+### Dependency license metadata
 
-```shell
-poetry shell
-pytest test_lib.py
-pytest test_lib.py::test_list
+Metadata about the license types of all dependencies is cached in the repository. To update this cache, run the
+following command from the repository root folder:
+
+```
+task general:cache-dep-licenses
 ```
 
-#### Linting and formatting
-
-When editing any Python file in the project remember to run linting checks with:
-
-```shell
-task python:check
-```
-
-This will run `flake8` automatically and return any error in the code formatting, if not already installed it will also
-install integration tests dependencies.
-
-In case of linting errors you should be able to solve most of them by automatically formatting with:
-
-```shell
-task python:format
-```
+The necessary **Licensed** tool can be installed by following
+[these instructions](https://github.com/github/licensed#as-an-executable).
 
 #### Configuration files formatting
 
@@ -230,16 +210,10 @@ extension][prettier-vscode-extension] to automatically format as you write.
 Otherwise you can use the following tasks. To do so you'll need to install `npm` if not already installed. Check the
 [official documentation][npm-install-docs] to learn how to install `npm` for your platform.
 
-To check if the files are correctly formatted run:
+Ensure the formatting is compliant by running the command:
 
 ```shell
-task config:check
-```
-
-If the output tells you that some files are not formatted correctly run:
-
-```shell
-task config:format
+task general:format-prettier
 ```
 
 When opening a new Pull Request, checks are automatically run to verify that configuration files are correctly
@@ -260,7 +234,7 @@ If you want to check out how the documentation would look after some local chang
 happens in the CI, generating the full documentation website from your personal computer. To run the docs toolchain
 locally, you need to have a few dependencies and tools installed:
 
-- [Go][1] version 1.14 or later
+- [Go][1] version 1.17 or later
 - [Taskfile][2] to help you run the most common tasks from the command line
 - A working [Python][3] environment, see [this paragraph](#integration-tests) if you need to setup one
 
@@ -268,14 +242,14 @@ Before running the toolchain, perform the following operations from the root of 
 virtual environment, activate it before proceeding):
 
 - go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
-- pip install -r requirements_docs.txt
+- poetry install
 
 When working on docs, you can launch a command that will take care of generating the docs, build the static website and
 start a local server you can later access with a web browser to see a preview of your changes. From the root of the git
 repository run:
 
 ```shell
-task docs:serve
+task website:serve
 ```
 
 If you don't see any error, hit http://127.0.0.1:8000 with your browser to navigate the generated docs.
@@ -286,35 +260,6 @@ The present git repository has a special branch called `gh-pages` that contains 
 website; every time a change is pushed to this special branch, GitHub automatically triggers a deployment to pull the
 change and publish a new version of the website. Do not open Pull Requests to push changes to the `gh-pages` branch,
 that will be done exclusively from the CI.
-
-#### Docs versioning
-
-In order to provide support for multiple Arduino CLI releases, Documentation is versioned so that visitors can select
-which version of the documentation website should be displayed. Unfortunately this feature isn't provided by GitHub
-pages or MkDocs, so we had to implement it on top of the generation process.
-
-Before delving into the details of the generation process, here follow some requirements that were established to
-provide versioned documentation:
-
-- A special version of the documentation called `dev` is provided to reflect the status of the Arduino CLI on the
-  `master` branch - this includes unreleased features and bugfixes.
-- Docs are versioned after the minor version of an Arduino CLI release. For example, Arduino CLI `0.99.1` and `0.99.2`
-  will be both covered by documentation version `0.99`.
-- The landing page of the documentation website will automatically redirect visitors to the most recently released
-  version of the Arduino CLI.
-
-To implement the requirements above, the execution of MkDocs is wrapped using a CLI tool called [Mike][10] that does a
-few things for us:
-
-- It runs MkDocs targeting subfolders named after the Arduino CLI version, e.g. documentation for version `0.10.1` can
-  be found under the folder `0.10`.
-- It injects an HTML control into the documentation website that lets visitors choose which version of the docs to
-  browse from a dropdown list.
-- It provides a redirect to a version we decide when visitors hit the landing page of the documentation website.
-- It pushes generated contents to the `gh-pages` branch.
-
-> **Note:** unless you're working on the generation process itself, you should never run Mike from a local environment,
-> either directly or through the Task `docs:publish`. This might result in unwanted changes to the public website.
 
 #### Docs formatting
 
@@ -328,16 +273,10 @@ extension][prettier-vscode-extension] to automatically format as you write.
 Otherwise you can use the following tasks. To do so you'll need to install `npm` if not already installed. Check the
 [official documentation][npm-install-docs] to learn how to install `npm` for your platform.
 
-To check if the files are correctly formatted run:
+Ensure the formatting is compliant by running the command:
 
 ```shell
-task docs:check
-```
-
-If the output tells you that some files are not formatted correctly run:
-
-```shell
-task docs:format
+task general:format-prettier
 ```
 
 When opening a new Pull Request, checks are automatically run to verify that documentation is correctly formatted. In
@@ -346,35 +285,16 @@ case of failures we might ask you to update the PR with correct formatting.
 #### Docs automation
 
 In order to avoid unwanted changes to the public website hosting the Arduino CLI documentation, only Mike is allowed to
-push changes to the `gh-pages` branch, and this only happens from within the CI, in a workflow named [publish-docs][11].
+push changes to the `gh-pages` branch, and this only happens from within the CI, in a workflow named [Deploy
+Website][11].
 
-The CI is responsible for guessing which version of the Arduino CLI we're building docs for, so that generated content
-will be stored in the appropriate section of the documentation website. Because this guessing might be fairly complex,
-the logic is implemented in a Python script called [`build.py`][12]. The script will determine the version of the
-Arduino CLI that was modified in the current commit (either `dev` or an official, numbered release) and whether the
-redirect to the latest version that happens on the landing page should be updated or not.
+Details on the documentation publishing system are available [here][12].
 
 ### Internationalization (i18n)
 
 In order to support i18n in the CLI, any messages that are intended to be translated should be wrapped in a call to
 `i18n.Tr`. This call allows us to build a catalog of translatable strings, replacing the reference string at runtime
 with the localized value.
-
-Adding or modifying these messages requires an i18n update, as this process creates the reference catalog that is shared
-with translators. For that reason, the `task check` command will fail if the catalog was not updated to sync with
-changes to the source code.
-
-To update the catalog, execute the following command and commit the changes.
-
-```shell
-task i18n:update
-```
-
-To verify that the catalog is up-to-date, you may execute the command:
-
-```shell
-task i18n:check
-```
 
 Example usage:
 
@@ -383,13 +303,20 @@ package main
 
 import (
   "fmt"
-  "github.com/arduino/arduino-cli/i18n"
+  "github.com/arduino/arduino-cli/internal/i18n"
 )
 
 func main() {
   fmt.Println(i18n.Tr("Hello World!"))
 }
 ```
+
+### About `easyjson` golang library
+
+We use the hi-performance `easyjson` library to parse the large JSON index files for libraries and platforms. To obtain
+the best performance we must do some code generation, this is done via `task go:easyjson-generate`. If you ever touch
+source code using the `easyjson` library, make sure to re-run the `go:easyjson-generate` task to see if there are
+changes in the generated code.
 
 ### Additional settings
 
@@ -401,23 +328,20 @@ If your PR doesn't need to be included in the changelog, please start the commit
 **[skip changelog]**
 
 [0]: https://cla-assistant.io/arduino/arduino-cli
-[1]: https://golang.org/doc/install
+[1]: https://go.dev/doc/install
 [2]: https://taskfile.dev/#/installation
 [3]: https://www.python.org/downloads/
-[4]: https://docs.python.org/3/tutorial/venv.html
-[5]: https://github.com/ofek/hatch
-[6]: https://github.com/protocolbuffers/protobuf/releases
+[6]: https://buf.build/docs/installation/
 [7]: https://pages.github.com/
 [9]: https://www.mkdocs.org/
-[10]: https://github.com/jimporter/mike
-[11]: https://github.com/arduino/arduino-cli/blob/master/.github/workflows/publish-docs.yaml
-[12]: https://github.com/arduino/arduino-cli/blob/master/docs/build.py
+[11]: https://github.com/arduino/arduino-cli/blob/master/.github/workflows/deploy-cobra-mkdocs-versioned-poetry.yml
+[12]:
+  https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/deploy-cobra-mkdocs-versioned-poetry.md
 [forum]: https://forum.arduino.cc/index.php?board=145.0
 [issues]: #issue-reports
 [nightly]: https://arduino.github.io/arduino-cli/latest/installation/#nightly-builds
 [prs]: #pull-requests
-[translate]: https://www.transifex.com/arduino-1/arduino-cli/
-[donate]: https://www.arduino.cc/en/Main/Contribute
+[translate]: https://explore.transifex.com/arduino-1/arduino-cli/
 [store]: https://store.arduino.cc
 [issue-tracker]: https://github.com/arduino/arduino-cli/issues?q=
 [reactions]: https://github.com/blog/2119-add-reactions-to-pull-requests-issues-and-comments

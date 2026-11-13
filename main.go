@@ -16,19 +16,80 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"io"
 	"os"
 
-	"github.com/arduino/arduino-cli/cli"
-	"github.com/arduino/arduino-cli/cli/errorcodes"
-	"github.com/arduino/arduino-cli/configuration"
-	"github.com/arduino/arduino-cli/i18n"
+	"github.com/arduino/arduino-cli/commands"
+	"github.com/arduino/arduino-cli/internal/cli"
+	"github.com/arduino/arduino-cli/internal/cli/config"
+	"github.com/arduino/arduino-cli/internal/cli/configuration"
+	"github.com/arduino/arduino-cli/internal/cli/feedback"
+	"github.com/arduino/arduino-cli/internal/i18n"
+	"github.com/arduino/arduino-cli/internal/locales"
+	rpc "github.com/arduino/arduino-cli/rpc/cc/arduino/cli/commands/v1"
+	"github.com/arduino/go-paths-helper"
+	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 func main() {
-	configuration.Settings = configuration.Init(configuration.FindConfigFileInArgsOrWorkingDirectory(os.Args))
-	i18n.Init()
-	arduinoCmd := cli.NewCommand()
-	if err := arduinoCmd.Execute(); err != nil {
-		os.Exit(errorcodes.ErrGeneric)
+	// Disable logging until it is setup in the arduino-cli pre-run
+	logrus.SetOutput(io.Discard)
+
+	// Search for the configuration file in the command line arguments and in the environment
+	configFile := configuration.FindConfigFlagsInArgsOrFallbackOnEnv(os.Args)
+	ctx := config.SetConfigFile(context.Background(), configFile)
+
+	// Create a new ArduinoCoreServer
+	srv := commands.NewArduinoCoreServer()
+
+	// Read the settings from the configuration file
+	openReq := &rpc.ConfigurationOpenRequest{SettingsFormat: "yaml"}
+	var configFileLoadingWarnings []string
+	if configData, err := paths.New(configFile).ReadFile(); err == nil {
+		openReq.EncodedSettings = string(configData)
+	} else if !os.IsNotExist(err) {
+		feedback.FatalError(fmt.Errorf("couldn't read configuration file: %w", err), feedback.ErrGeneric)
+	}
+	if resp, err := srv.ConfigurationOpen(ctx, openReq); err != nil {
+		feedback.FatalError(fmt.Errorf("couldn't load configuration: %w", err), feedback.ErrGeneric)
+	} else if warnings := resp.GetWarnings(); len(warnings) > 0 {
+		// Save the warnings to show them later when the feedback package is fully initialized
+		configFileLoadingWarnings = warnings
+	}
+
+	// Get the current settings from the server
+	resp, err := srv.ConfigurationGet(ctx, &rpc.ConfigurationGetRequest{})
+	if err != nil {
+		feedback.FatalError(err, feedback.ErrGeneric)
+	}
+	config := resp.GetConfiguration()
+
+	// Setup i18n
+	locales.Init(config.GetLocale())
+
+	// Setup command line parser with the server and settings
+	arduinoCmd := cli.NewCommand(srv)
+	parentPreRun := arduinoCmd.PersistentPreRun
+	arduinoCmd.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		if parentPreRun != nil {
+			parentPreRun(cmd, args)
+		}
+
+		// In Text mode print the warnings about the configuration file
+		// only if we are inside the "config ..." command. In JSON mode always
+		// output the warning.
+		if feedback.GetFormat() != feedback.Text || (cmd.HasParent() && cmd.Parent().Name() == "config") {
+			for _, warning := range configFileLoadingWarnings {
+				feedback.Warning(fmt.Sprintf("%s: %s", i18n.Tr("Invalid value in configuration"), warning))
+			}
+		}
+	}
+
+	// Execute the command line.
+	if err := arduinoCmd.ExecuteContext(ctx); err != nil {
+		feedback.FatalError(err, feedback.ErrGeneric)
 	}
 }

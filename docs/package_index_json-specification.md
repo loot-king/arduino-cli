@@ -2,8 +2,8 @@ Introduced in Arduino IDE 1.6.4, Boards Manager makes it easy to install and upd
 provide Boards Manager installation support for a platform, a JSON formatted index file must be published. This is the
 specification for that file.
 
-Boards Manager functionality is provided by [Arduino CLI](getting-started.md#adding-3rd-party-cores),
-[Arduino IDE](https://www.arduino.cc/en/Guide/Cores), and Arduino Pro IDE.
+Boards Manager functionality is provided by [Arduino CLI](getting-started.md#adding-3rd-party-cores) and
+[Arduino IDE](https://docs.arduino.cc/learn/starting-guide/cores).
 
 ## Naming of the JSON index file
 
@@ -64,9 +64,10 @@ The metadata fields are:
 - `name`: the folder used for the installed cores. The
   [vendor folder](platform-specification.md#hardware-folders-structure) name of the installed package is determined by
   this field
-- `maintainer`: the extended name of the vendor that is displayed on the Arduino IDE/Pro IDE's Boards Manager GUI
-- `websiteURL`: the URL to the vendor's website, appears on the Arduino IDE/Pro IDE's Boards Manager as a "More info"
-  link
+  - The value must not contain any characters other than the letters `A`-`Z` and `a`-`z`, numbers (`0`-`9`), underscores
+    (`_`), dashes (`-`), and dots (`.`).
+- `maintainer`: the extended name of the vendor that is displayed on the Arduino IDE Boards Manager GUI
+- `websiteURL`: the URL to the vendor's website, appears on the Arduino IDE Boards Manager as a "More info" link
 - `email`: the email of the vendor/maintainer
 
 Now, before looking at `PLATFORMS`, let's explore first how `TOOLS` are made.
@@ -80,6 +81,8 @@ Each tool describes a binary distribution of a command line tool. A tool can be:
 - a file preprocessor
 - a debugger
 - a program that performs a firmware upgrade
+- a [pluggable discovery](pluggable-discovery-specification.md)
+- a [pluggable monitor](pluggable-monitor-specification.md)
 
 basically anything that can run on the user's host PC and do something useful.
 
@@ -150,19 +153,7 @@ package. There can be many different versions of the same tool available at the 
 - (`arduino`, `avrdude`, `6.1`)
 - .....
 
-Each tool version may come in different build flavours for different OS. Each flavour is listed under the `systems`
-array. In the example above `avr-gcc` comes with builds for:
-
-- ARM Linux 32-bit (`arm-linux-gnueabihf`),
-- ARM Linux 64-bit (`aarch64-linux-gnu`),
-- macOS 64-bit (`x86_64-apple-darwin14`),
-- Windows (`i686-mingw32`),
-- Linux 32-bit (`i686-linux-gnu`),
-- Linux 64-bit (`x86_64-linux-gnu`)
-
-The IDE will take care to install the right flavour based on the `host` value, or fail if a needed flavour is
-missing.<br> Note that this information is not used to select the toolchain during compilation. If you want this
-specific version to be used, you should use the notation `{runtime.tools.TOOLNAME-VERSION.path}` in the platform.txt.
+The `systems` field lists all available [Tools Flavours](#tools-flavours-available-builds-made-for-different-os).
 
 The other fields are:
 
@@ -175,16 +166,59 @@ The other fields are:
   macOS you can use the command `shasum -a 256 filename` to generate SHA-256 checksums. There are free options for
   Windows, including md5deep. There are also online utilities for generating checksums.
 
-##### How a tool's path is determined in platform.txt
+#### Tools flavours (available builds made for different OS)
 
-When the IDE needs a tool, it downloads the corresponding archive file and unpacks the content into a private folder
-that can be referenced from `platform.txt` using one of the following properties:
+Each tool version may come in different build flavours for different OS. Each flavour is listed under the `systems`
+array. The IDE will take care to install the right flavour for the user's OS by matching the `host` value with the
+following table or fail if a needed flavour is missing.
 
-- `{runtime.tools.TOOLNAME-VERSION.path}`
-- `{runtime.tools.TOOLNAME.path}`
+| OS flavour      | `host` regexp                          | suggested `host` value              |
+| --------------- | -------------------------------------- | ----------------------------------- |
+| Linux 32        | `i[3456]86-.*linux-gnu`                | `i686-linux-gnu`                    |
+| Linux 64        | `x86_64-.*linux-gnu`                   | `x86_64-linux-gnu`                  |
+| Linux Arm       | `arm.*-linux-gnueabihf`                | `arm-linux-gnueabihf`               |
+| Linux Arm64     | `(aarch64\|arm64)-linux-gnu`           | `aarch64-linux-gnu`                 |
+| Linux RISC-V 64 | `riscv64-linux-gnu`                    | `riscv64-linux-gnu`                 |
+| Windows 32      | `i[3456]86-.*(mingw32\|cygwin)`        | `i686-mingw32` or `i686-cygwin`     |
+| Windows 64      | `(amd64\|x86_64)-.*(mingw32\|cygwin)`  | `x86_64-mingw32` or `x86_64-cygwin` |
+| Windows Arm64   | `(aarch64\|arm64)-.*(mingw32\|cygwin)` | `arm64-mingw32` or `arm64-cygwin`   |
+| MacOSX 32       | `i[3456]86-apple-darwin.*`             | `i686-apple-darwin`                 |
+| MacOSX 64       | `x86_64-apple-darwin.*`                | `x86_64-apple-darwin`               |
+| MacOSX Arm64    | `arm64-apple-darwin.*`                 | `arm64-apple-darwin`                |
+| FreeBSD 32      | `i?[3456]86-freebsd[0-9]*`             | `i686-freebsd`                      |
+| FreeBSD 64      | `amd64-freebsd[0-9]*`                  | `amd64-freebsd`                     |
+| FreeBSD Arm     | `arm.*-freebsd[0-9]*`                  | `arm-freebsd`                       |
 
-For example, to obtain the avr-gcc 4.8.1 folder we can use `{runtime.tools.avr-gcc-4.8.1-arduino5.path}` or
-`{runtime.tools.avr-gcc.path}`.
+The `host` value is matched with the regexp, this means that a more specific value for the `host` field is allowed (for
+example you may write `x86_64-apple-darwin14.1` for MacOSX instead of the suggested `x86_64-apple-darwin`), by the way,
+we recommend to keep it simple and stick to the suggested value in the table.
+
+Some OS allows to run different flavours:
+
+| The OS...     | ...may also run builds for |
+| ------------- | -------------------------- |
+| Windows 64    | Windows 32                 |
+| Windows Arm64 | Windows 32 or Windows 64   |
+| MacOSX 64     | MacOSX 32                  |
+| MacOSX Arm64  | MacOSX 64 or MacOSX 32     |
+
+This is taken into account when the tools are downloaded (for example if we are on a Windows 64 machine and the needed
+tool is available only for the Windows 32 flavour, then the Windows 32 flavour will be downloaded and used).
+
+For completeness, the previous example `avr-gcc` comes with builds for:
+
+- ARM Linux 32 (`arm-linux-gnueabihf`),
+- ARM Linux 64 (`aarch64-linux-gnu`),
+- MacOSX 64 (`x86_64-apple-darwin14`),
+- Windows 32 (`i686-mingw32`),
+- Linux 32 (`i686-linux-gnu`),
+- Linux 64 (`x86_64-linux-gnu`)
+- MacOSX Arm64 will use the MacOSX 64 flavour
+- Windows 64 will use the Windows 32 flavour
+- Windows Arm64 will use the Windows 32 flavour
+
+Note: this information is not used to select the toolchain during compilation. If you want a specific version to be
+used, you should use the notation `{runtime.tools.TOOLNAME-VERSION.path}` in the platform.txt.
 
 ### Platforms definitions
 
@@ -215,6 +249,16 @@ Finally, let's see how `PLATFORMS` are made.
           "toolsDependencies": [
             { "packager": "arduino", "name": "avr-gcc", "version": "4.8.1-arduino5" },
             { "packager": "arduino", "name": "avrdude", "version": "6.0.1-arduino5" }
+          ],
+          "discoveryDependencies": [
+            { "packager": "arduino", "name": "serial-discovery" },
+            { "packager": "arduino", "name": "mdns-discovery" }
+          ],
+          "monitorDependencies": [
+            { "packager": "arduino", "name": "serial-monitor" }
+          ],
+          "libraryDependencies": [
+            { "name": "LibraryName", "version": "1.0.0" }
           ]
         },
 ```
@@ -224,16 +268,38 @@ Each PLATFORM describes a core for a specific architecture. The fields needed ar
 - `name`: the extended name of the platform that is displayed on the Boards Manager GUI
 - `architecture`: is the architecture of the platform (avr, sam, etc...). It must match the architecture of the core as
   explained in the [Arduino platform specification](platform-specification.md#hardware-folders-structure)
+  - The value must not contain any characters other than the letters `A`-`Z` and `a`-`z`, numbers (`0`-`9`), underscores
+    (`_`), dashes (`-`), and dots (`.`).
 - `version`: the version of the platform.
+- `deprecated`: (optional) setting to `true` causes the platform to be moved to the bottom of all Boards Manager and
+  [`arduino-cli core`](https://arduino.github.io/arduino-cli/latest/commands/arduino-cli_core/) listings and marked
+  "DEPRECATED".
 - `category`: this field is reserved, a 3rd party core must set it to `Contributed`
 - `help`/`online`: is a URL that is displayed on the Arduino IDE's Boards Manager as an "Online Help" link
 - `url`, `archiveFileName`, `size` and `checksum`: metadata of the core archive file. The meaning is the same as for the
   TOOLS
-- `boards`: the list of boards supported (note: just the names to display on the Arduino IDE and Arduino Pro IDE's
-  Boards Manager GUI! the real boards definitions are inside `boards.txt` inside the core archive file)
-- `toolsDependencies`: the tools needed by this core. They will be installed by Boards Manager along with the platform.
-  Each tool is referenced by the triple (`packager`, `name`, `version`) as previously said. Note that you can reference
+- `boards`: the list of boards supported (note: just the names to display on the Arduino IDE's Boards Manager GUI! the
+  real boards definitions are inside `boards.txt` inside the core archive file)
+- `toolsDependencies`: the tools needed by this platform. They will be installed by Boards Manager along with the
+  platform. Each tool is referenced by the triple (`packager`, `name`, `version`) as previously said. Note that you can
+  reference tools available in other packages as well, even if no platform of that package is installed.
+- `discoveryDependencies`: the Pluggable Discoveries needed by this platform. These are [tools](#tools-definitions),
+  defined exactly like the ones referenced in `toolsDependencies`. Unlike `toolsDependencies`, discoveries are
+  referenced by the pair (`packager`, `name`). The `version` is not specified because the latest installed discovery
+  tool will always be used. Like `toolsDependencies` they will be installed by Boards Manager along with the platform
+  and can reference tools available in other packages as well, even if no platform of that package is installed.
+- `monitorDependencies`: the Pluggable Monitors needed by this platform. These are [tools](#tools-definitions), defined
+  exactly like the ones referenced in `toolsDependencies`. Unlike `toolsDependencies`, monitors are referenced by the
+  pair (`packager`, `name`). The `version` is not specified because the latest installed monitor tool will always be
+  used. Like `toolsDependencies` they will be installed by Boards Manager along with the platform and can reference
   tools available in other packages as well, even if no platform of that package is installed.
+- `libraryDependencies`: the libraries needed by this platform that will be installed together with the platform. These
+  are [libraries](library-specification.md) that must be present in the
+  [Arduino Libraries Manager index](https://docs.arduino.cc/libraries/). The `version` is the minimum required version
+  of the library: if a version greater than or equal to the required version is already installed, the installed version
+  will be left unchanged; otherwise the installed library will be upgraded to the required version.
+
+  This field is supported since Arduino CLI 1.5.0 and Arduino IDE 2.4.0.
 
 The `version` field is validated by both Arduino IDE and [JSemVer](https://github.com/zafarkhaja/jsemver). Here are the
 rules Arduino IDE follows for parsing versions
@@ -248,6 +314,37 @@ rules Arduino IDE follows for parsing versions
 
 Note: if you miss a bracket in the JSON index, then add the URL to your Preferences, and open Boards Manager it can
 cause the Arduino IDE to no longer load until you have deleted the file from your arduino15 folder.
+
+#### How a tool's path is determined in platform.txt
+
+When the IDE needs a tool, it downloads the corresponding archive file and unpacks the content into a private folder
+that can be referenced from `platform.txt` using one of the following properties:
+
+- `{runtime.tools.TOOLNAME-VERSION.path}`
+- `{runtime.tools.TOOLNAME.path}`
+
+For example, to obtain the avr-gcc 4.8.1 folder we can use `{runtime.tools.avr-gcc-4.8.1.path}` or
+`{runtime.tools.avr-gcc.path}`.
+
+In general the same tool may be provided by different packagers (for example the Arduino packager may provide an
+`arduino:avr-gcc` and another 3rd party packager may provide their own `3rdparty:avr-gcc`). The rules to disambiguate
+are as follows:
+
+- The property `{runtime.tools.TOOLNAME.path}` points, in order of priority, to:
+  1. the tool, version and packager specified via `toolsDependencies` in the `package_index.json`
+  1. the highest version of the tool provided by the packager of the current platform
+  1. the highest version of the tool provided by the packager of the referenced platform used for compile (see
+     ["Referencing another core, variant or tool"](platform-specification.md#referencing-another-core-variant-or-tool)
+     for more info)
+  1. the highest version of the tool provided by any other packager (in case of tie, the first packager in alphabetical
+     order wins)
+
+- The property `{runtime.tools.TOOLNAME-VERSION.path}` points, in order of priority, to:
+  1. the tool and version provided by the packager of the current platform
+  1. the tool and version provided by the packager of the referenced platform used for compile (see
+     ["Referencing another core, variant or tool"](platform-specification.md#referencing-another-core-variant-or-tool)
+     for more info)
+  1. the tool and version provided by any other packager (in case of tie, the first packager in alphabetical order wins)
 
 ### Example JSON index file
 
@@ -327,9 +424,49 @@ versions of the `PACKAGE`, 1.0.0 and 1.0.1. No `TOOLS` needed to be installed so
 
 Here is the Boards Manager entry created by the example: ![Boards Manager screenshot](img/boards-manager-screenshot.png)
 
-## Installation archive structure
+## Archive structure
 
-The installation archives contain the Board support files. Supported formats are .zip, .tar.bz2, and .tar.gz.
+It must contain a single folder in the root. All files and `__MACOSX` folder present in the root will be ignored.
+
+Valid structure
+
+```
+.
+└── avr/
+    ├── bootloaders
+    ├── cores
+    ├── firmwares
+    ├── libraries
+    ├── variants
+    ├── boards.txt
+    ├── platform.txt
+    └── programmers.txt
+```
+
+Invalid structure:
+
+```
+.
+├── avr/
+│   ├── ...
+│   ├── boards.txt
+│   ├── platform.txt
+│   └── programmers.txt
+├── folder2
+└── folder3
+```
+
+**Note**: the folder structure of the core archive is slightly different from the standard manually installed Arduino
+IDE 1.5+ compatible hardware folder structure. You must remove the architecture folder(e.g., `avr` or `arm`), moving all
+the files and folders within the architecture folder up a level.
+
+### Installation
+
+The installation archives contain the Board support files.
+
+Supported formats are `.zip`, `.tar.bz2`, and `.tar.gz`. Starting from Arduino CLI >=0.30.0 support for `.tar.xz`, and
+`.tar.zst` has been added, by the way, if you want to keep compatibility with older versions of Arduino IDE and Arduino
+CLI we recommend using one of the older formats.
 
 The folder structure of the core archive is slightly different from the standard manually installed Arduino IDE 1.5+
 compatible hardware folder structure. You must remove the architecture folder(e.g., `avr` or `arm`), moving all the

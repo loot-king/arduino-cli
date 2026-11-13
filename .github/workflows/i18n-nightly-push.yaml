@@ -11,24 +11,31 @@ jobs:
     # would always fail in forks
     if: github.repository == 'arduino/arduino-cli'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Install Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v6
         with:
-          go-version: "1.14"
+          go-version-file: go.mod
 
       - name: Install Taskfile
-        uses: Arduino/actions/setup-taskfile@master
+        uses: arduino/setup-task@v3
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           version: 3.x
 
+      - name: Run task i18n:update
+        run: task i18n:update
+
       - name: Run task i18n:push
         run: task i18n:push
         env:
+          TRANSIFEX_ORGANIZATION: ${{ secrets.TRANSIFEX_ORGANIZATION }}
           TRANSIFEX_PROJECT: ${{ secrets.TRANSIFEX_PROJECT }}
           TRANSIFEX_RESOURCE: ${{ secrets.TRANSIFEX_RESOURCE }}
           TRANSIFEX_API_KEY: ${{ secrets.TRANSIFEX_API_KEY }}

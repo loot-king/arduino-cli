@@ -1,12 +1,12 @@
 The process the Arduino development software uses to build a sketch. More useful information can be found in the
 [Arduino platform specification](platform-specification.md). Note that the following refers specifically to the build
-process for AVR targets. Other architectures will have a similar build process.
+process for AVR targets. Other architectures follow a similar build process, but may use other tools and compilers.
 
 ## Overview
 
 A number of things have to happen for your Arduino code to get onto the Arduino board. First, the Arduino development
 software performs some minor pre-processing to turn your sketch into a C++ program. Next, dependencies of the sketch are
-located. It then gets passed to a compiler (avr-gcc), which turns the human readable code into machine readable
+located. It then gets passed to a compiler (e.g, `avr-gcc`), which turns the human readable code into machine readable
 instructions (or object files). Then your code gets combined with (linked against) the standard Arduino libraries that
 provide basic functions like `digitalWrite()` or `Serial.print()`. The result is a single Intel hex file, which contains
 the specific bytes that need to be written to the program memory of the chip on the Arduino board. This file is then
@@ -15,8 +15,8 @@ external programming hardware.
 
 ## Pre-Processing
 
-The Arduino development software performs a few transformations to your sketch before passing it to the avr-gcc
-compiler:
+The Arduino development software performs a few transformations to your sketch before passing it to the compiler (e.g.,
+`avr-gcc`):
 
 - All .ino and .pde files in the sketch folder (shown in the Arduino IDE as tabs with no extension) are concatenated
   together, starting with the file that matches the folder name followed by the others in alphabetical order. The .cpp
@@ -52,9 +52,14 @@ generated for the path to each library dependency and appended to the
 If multiple libraries contain a file that matches the `#include` directive, the priority is determined by applying the
 following rules, one by one in this order, until a rule determines a winner:
 
+1. A library that has been specified using the [`--library` option](commands/arduino-cli_compile.md#options) of
+   `arduino-cli compile` wins against a library in other locations
 1. A library that is architecture compatible wins against a library that is not architecture compatible (see
    [**Architecture Matching**](#architecture-matching))
-1. A library that has better "folder name priority" wins (see [**Folder Name Priority**](#folder-name-priority))
+1. A library with both [library name](#library-name-priority) and [folder name](#folder-name-priority) matching the
+   include wins
+1. A library that has better "library name priority" or "folder name priority" wins (see
+   [**Library Name Priority**](#library-name-priority) and [**Folder Name Priority**](#folder-name-priority))
 1. A library that is architecture optimized wins against a library that is not architecture optimized (see
    [**Architecture Matching**](#architecture-matching))
 1. A library that has a better "location priority" wins (see [**Location Priority**](#location-priority))
@@ -86,6 +91,22 @@ Examples:
 | `architectures=avr,esp8266`                   | YES                   | YES                 |
 | `architectures=samd`                          | NO                    | NO                  |
 
+### Library Name Priority
+
+A library's name is defined by the [library.properties](library-specification.md#libraryproperties-file-format) `name`
+field. That value is sanitized by replacing spaces with `_` before comparing it to the file name of the include.
+
+The "library name priority" is determined as follows (in order of highest to lowest priority):
+
+| Rule                                                                      | Example for `Arduino_Low_Power.h` |
+| ------------------------------------------------------------------------- | --------------------------------- |
+| The library name matches the include 100%                                 | `Arduino Low Power`               |
+| The library name matches the include 100%, except with a `-main` suffix   | `Arduino Low Power-main`          |
+| The library name matches the include 100%, except with a `-master` suffix | `Arduino Low Power-master`        |
+| The library name has a matching prefix                                    | `Arduino Low Power Whatever`      |
+| The library name has a matching suffix                                    | `Awesome Arduino Low Power`       |
+| The library name contains the include                                     | `The Arduino Low Power Lib`       |
+
 ### Folder Name Priority
 
 The "folder name priority" is determined as follows (in order of highest to lowest priority):
@@ -93,6 +114,7 @@ The "folder name priority" is determined as follows (in order of highest to lowe
 | Rule                                                                     | Example for `Servo.h`       |
 | ------------------------------------------------------------------------ | --------------------------- |
 | The folder name matches the include 100%                                 | `Servo`                     |
+| The folder name matches the include 100%, except with a `-main` suffix   | `Servo-main`                |
 | The folder name matches the include 100%, except with a `-master` suffix | `Servo-master`              |
 | The folder name has a matching prefix                                    | `ServoWhatever`             |
 | The folder name has a matching suffix                                    | `AwesomeServo`              |
@@ -102,8 +124,6 @@ The "folder name priority" is determined as follows (in order of highest to lowe
 
 The "location priority" is determined as follows (in order of highest to lowest priority):
 
-1. The library is specified using the [`--library` option](commands/arduino-cli_compile.md#options) of
-   `arduino-cli compile`
 1. The library is under a custom libraries path specified via the
    [`--libraries` option](commands/arduino-cli_compile.md#options) of `arduino-cli compile` (in decreasing order of
    priority when multiple custom paths are defined)
@@ -112,14 +132,13 @@ The "location priority" is determined as follows (in order of highest to lowest 
    ([`{runtime.platform.path}/libraries`](platform-specification.md#global-predefined-properties))
 1. The library is bundled with the [referenced](platform-specification.md#referencing-another-core-variant-or-tool)
    board platform/core
-1. The library is bundled with the Arduino IDE
-   ([`{runtime.ide.path}/libraries`](platform-specification.md#global-predefined-properties))
-   - This location is only used by Arduino CLI when it's located in the Arduino IDE installation folder
+1. The library is bundled with the Arduino IDE (this location is determined by the Arduino CLI configuration setting
+   `directories.builtin.libraries`)
 
 #### Location priorities in Arduino Web Editor
 
-The location priorities system works in the same manner in [Arduino Web Editor](https://create.arduino.cc/editor), but
-its cloud-based nature may make the locations of libraries less obvious.
+The location priorities system works in the same manner in [Arduino Web Editor](https://create.arduino.cc/), but its
+cloud-based nature may make the locations of libraries less obvious.
 
 1. **Custom**: the imported libraries, shown under the **Libraries > Custom** tab.
    - These libraries are under `/tmp/\<some number>/custom`
@@ -139,8 +158,8 @@ its cloud-based nature may make the locations of libraries less obvious.
 
 ## Compilation
 
-Sketches are compiled by avr-gcc and avr-g++ according to the variables in the boards.txt file of the selected board's
-[platform](platform-specification.md).
+Sketches are compiled by architecture-specific versions of `gcc` and `g++` according to the variables in the boards.txt
+file of the selected board's [platform](platform-specification.md).
 
 The sketch is built in a temporary directory in the system-wide temporary directory (e.g. /tmp on Linux).
 
@@ -167,8 +186,9 @@ the build process will be printed in the console.
 
 ## Uploading
 
-Sketches are uploaded by avrdude. The upload process is also controlled by variables in the boards and main preferences
-files. See the [Arduino platform specification](platform-specification.md) page for details.
+Sketches are uploaded by a platform-specific upload tool (e.g., avrdude). The upload process is also controlled by
+variables in the boards and main preferences files. See the [Arduino platform specification](platform-specification.md)
+page for details.
 
-If verbose output during upload is enabled, debugging information will be output to the console, including avrdude
-command lines and verbose output.
+If verbose output during upload is enabled, debugging information will be output to the console, including the upload
+tool's command lines and verbose output.

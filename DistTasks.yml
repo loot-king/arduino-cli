@@ -1,3 +1,4 @@
+# Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/release-go-task/DistTasks.yml
 version: "3"
 
 # This taskfile is ideally meant to be project agnostic and could be dropped in
@@ -16,196 +17,216 @@ version: "3"
 #
 # The project MUST contain a LICENSE.txt file in the root folder or packaging will fail.
 
-tasks:
-  all:
-    desc: Build for distribution for all platforms
-    cmds:
-      - task: Windows_32bit
-      - task: Windows_64bit
-      - task: Linux_32bit
-      - task: Linux_64bit
-      - task: Linux_ARMv6
-      - task: Linux_ARMv7
-      - task: Linux_ARM64
-      - task: macOS_64bit
+vars:
+  CONTAINER: "docker.elastic.co/beats-dev/golang-crossbuild"
+  GO_VERSION:
+    sh: go list -m -f '{{"{{.GoVersion}}"}}'
 
+tasks:
   Windows_32bit:
     desc: Builds Windows 32 bit binaries
-    dir: "{{ .DIST_DIR }}"
     cmds:
       - |
-        docker run -v `pwd`/..:/home/build -w /home/build \
-        -e CGO_ENABLED=1 \
-        {{ .CONTAINER }}:{{ .CONTAINER_TAG }} \
-        --build-cmd "{{ .BUILD_COMMAND }}" \
-        -p "{{ .BUILD_PLATFORM }}"
+        CGO_ENABLED=0 GOOS=windows GOARCH=386 {{.BUILD_COMMAND}}
 
-        zip {{ .PACKAGE_NAME}} {{ .PLATFORM_DIR }}/{{ .PROJECT_NAME }}.exe ../LICENSE.txt -j
-        sha256sum {{ .PACKAGE_NAME }} >> {{ .CHECKSUM_FILE }}
+        cd {{.DIST_DIR}}
+        zip {{.PACKAGE_NAME}} {{.PLATFORM_DIR}}/{{.PROJECT_NAME}}.exe ../LICENSE.txt -j
 
     vars:
-      PLATFORM_DIR: "{{ .PROJECT_NAME }}_windows_386"
-      BUILD_COMMAND: "go build -o {{ .DIST_DIR }}/{{ .PLATFORM_DIR }}/{{ .PROJECT_NAME }}.exe {{ .LDFLAGS }}"
-      BUILD_PLATFORM: "windows/386"
-      CONTAINER_TAG: "{{ .GO_VERSION }}-main"
+      PLATFORM_DIR: "{{.PROJECT_NAME}}_windows_386"
+      BUILD_COMMAND: "go build -o {{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}}.exe {{.LDFLAGS}}"
       PACKAGE_PLATFORM: "Windows_32bit"
-      PACKAGE_NAME: "{{ .PROJECT_NAME }}_{{ .VERSION }}_{{ .PACKAGE_PLATFORM }}.zip"
+      PACKAGE_NAME: "{{.PROJECT_NAME}}_{{.VERSION}}_{{.PACKAGE_PLATFORM}}.zip"
 
   Windows_64bit:
     desc: Builds Windows 64 bit binaries
-    dir: "{{ .DIST_DIR }}"
     cmds:
       - |
-        docker run -v `pwd`/..:/home/build -w /home/build \
-        -e CGO_ENABLED=1 \
-        {{ .CONTAINER }}:{{ .CONTAINER_TAG }} \
-        --build-cmd "{{ .BUILD_COMMAND }}" \
-        -p "{{ .BUILD_PLATFORM }}"
+        CGO_ENABLED=0 GOOS=windows GOARCH=amd64 {{.BUILD_COMMAND}}
 
-        zip {{ .PACKAGE_NAME}} {{ .PLATFORM_DIR }}/{{ .PROJECT_NAME }}.exe ../LICENSE.txt -j
-        sha256sum {{ .PACKAGE_NAME }} >> {{ .CHECKSUM_FILE }}
+        cd {{.DIST_DIR}}
+        zip {{.PACKAGE_NAME}} {{.PLATFORM_DIR}}/{{.PROJECT_NAME}}.exe ../LICENSE.txt -j
 
     vars:
-      PLATFORM_DIR: "{{ .PROJECT_NAME }}_windows_amd64"
-      BUILD_COMMAND: "go build -o {{ .DIST_DIR }}/{{ .PLATFORM_DIR }}/{{ .PROJECT_NAME }}.exe {{ .LDFLAGS }}"
-      BUILD_PLATFORM: "windows/amd64"
-      CONTAINER_TAG: "{{ .GO_VERSION }}-main"
+      PLATFORM_DIR: "{{.PROJECT_NAME}}_windows_amd64"
+      BUILD_COMMAND: "go build -o {{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}}.exe {{.LDFLAGS}}"
       PACKAGE_PLATFORM: "Windows_64bit"
-      PACKAGE_NAME: "{{ .PROJECT_NAME }}_{{ .VERSION }}_{{ .PACKAGE_PLATFORM }}.zip"
+      PACKAGE_NAME: "{{.PROJECT_NAME}}_{{.VERSION}}_{{.PACKAGE_PLATFORM}}.zip"
+
+  Windows_ARM64:
+    desc: Builds Windows ARM 64 bit binaries
+    cmds:
+      - |
+        CGO_ENABLED=0 GOOS=windows GOARCH=arm64 {{.BUILD_COMMAND}}
+
+        cd {{.DIST_DIR}}
+        zip {{.PACKAGE_NAME}} {{.PLATFORM_DIR}}/{{.PROJECT_NAME}}.exe ../LICENSE.txt -j
+
+    vars:
+      PLATFORM_DIR: "{{.PROJECT_NAME}}_windows_arm64"
+      BUILD_COMMAND: "go build -o {{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}}.exe {{.LDFLAGS}}"
+      PACKAGE_PLATFORM: "Windows_ARM64"
+      PACKAGE_NAME: "{{.PROJECT_NAME}}_{{.VERSION}}_{{.PACKAGE_PLATFORM}}.zip"
 
   Linux_32bit:
     desc: Builds Linux 32 bit binaries
-    dir: "{{ .DIST_DIR }}"
     cmds:
       - |
-        docker run -v `pwd`/..:/home/build -w /home/build \
-        -e CGO_ENABLED=1 \
-        {{ .CONTAINER }}:{{ .CONTAINER_TAG }} \
-        --build-cmd "{{ .BUILD_COMMAND }}" \
-        -p "{{ .BUILD_PLATFORM }}"
+        CGO_ENABLED=0 GOOS=linux GOARCH=386 {{.BUILD_COMMAND}}
 
-        tar cz -C {{ .PLATFORM_DIR }} {{ .PROJECT_NAME }} -C ../.. LICENSE.txt  -f {{ .PACKAGE_NAME }}
-        sha256sum {{ .PACKAGE_NAME }} >> {{ .CHECKSUM_FILE }}
+        cd {{.DIST_DIR}}
+        tar cz -C {{.PLATFORM_DIR}} {{.PROJECT_NAME}} -C ../.. LICENSE.txt  -f {{.PACKAGE_NAME}}
+      - task: build_deb
+        vars:
+          GO_BINARY: "{{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}}"
+          ARCH: "i386"
 
     vars:
-      PLATFORM_DIR: "{{ .PROJECT_NAME }}_linux_amd32"
-      BUILD_COMMAND: "go build -o {{ .DIST_DIR }}/{{ .PLATFORM_DIR }}/{{ .PROJECT_NAME }} {{ .LDFLAGS }}"
-      BUILD_PLATFORM: "linux/386"
-      CONTAINER_TAG: "{{ .GO_VERSION }}-main"
+      PLATFORM_DIR: "{{.PROJECT_NAME}}_linux_amd32"
+      BUILD_COMMAND: "go build -o {{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}} {{.LDFLAGS}}"
       PACKAGE_PLATFORM: "Linux_32bit"
-      PACKAGE_NAME: "{{ .PROJECT_NAME }}_{{ .VERSION }}_{{ .PACKAGE_PLATFORM }}.tar.gz"
+      PACKAGE_NAME: "{{.PROJECT_NAME}}_{{.VERSION}}_{{.PACKAGE_PLATFORM}}.tar.gz"
 
   Linux_64bit:
     desc: Builds Linux 64 bit binaries
-    dir: "{{ .DIST_DIR }}"
     cmds:
       - |
-        docker run -v `pwd`/..:/home/build -w /home/build \
-        -e CGO_ENABLED=1 \
-        {{ .CONTAINER }}:{{ .CONTAINER_TAG }} \
-        --build-cmd "{{ .BUILD_COMMAND }}" \
-        -p "{{ .BUILD_PLATFORM }}"
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 {{.BUILD_COMMAND}}
 
-        tar cz -C {{ .PLATFORM_DIR }} {{ .PROJECT_NAME }} -C ../.. LICENSE.txt  -f {{ .PACKAGE_NAME }}
-        sha256sum {{ .PACKAGE_NAME }} >> {{ .CHECKSUM_FILE }}
+        cd {{.DIST_DIR}}
+        tar cz -C {{.PLATFORM_DIR}} {{.PROJECT_NAME}} -C ../.. LICENSE.txt  -f {{.PACKAGE_NAME}}
+      - task: build_deb
+        vars:
+          GO_BINARY: "{{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}}"
+          ARCH: "amd64"
 
     vars:
-      PLATFORM_DIR: "{{ .PROJECT_NAME }}_linux_amd64"
-      BUILD_COMMAND: "go build -o {{ .DIST_DIR }}/{{ .PLATFORM_DIR }}/{{ .PROJECT_NAME }} {{ .LDFLAGS }}"
-      BUILD_PLATFORM: "linux/amd64"
-      CONTAINER_TAG: "{{ .GO_VERSION }}-main"
+      PLATFORM_DIR: "{{.PROJECT_NAME}}_linux_amd64"
+      BUILD_COMMAND: "go build -o {{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}} {{.LDFLAGS}}"
       PACKAGE_PLATFORM: "Linux_64bit"
-      PACKAGE_NAME: "{{ .PROJECT_NAME }}_{{ .VERSION }}_{{ .PACKAGE_PLATFORM }}.tar.gz"
+      PACKAGE_NAME: "{{.PROJECT_NAME}}_{{.VERSION}}_{{.PACKAGE_PLATFORM}}.tar.gz"
 
   Linux_ARMv7:
     desc: Builds Linux ARMv7 binaries
-    dir: "{{ .DIST_DIR }}"
     cmds:
       - |
-        docker run -v `pwd`/..:/home/build -w /home/build \
-        -e CGO_ENABLED=1 \
-        {{ .CONTAINER }}:{{ .CONTAINER_TAG }} \
-        --build-cmd "{{ .BUILD_COMMAND }}" \
-        -p "{{ .BUILD_PLATFORM }}"
+        CGO_ENABLED=0 GOOS=linux GOARM=7 GOARCH=arm {{.BUILD_COMMAND}}
 
-        tar cz -C {{ .PLATFORM_DIR }} {{ .PROJECT_NAME }} -C ../.. LICENSE.txt  -f {{ .PACKAGE_NAME }}
-        sha256sum {{ .PACKAGE_NAME }} >> {{ .CHECKSUM_FILE }}
+        cd {{.DIST_DIR}}
+        tar cz -C {{.PLATFORM_DIR}} {{.PROJECT_NAME}} -C ../.. LICENSE.txt  -f {{.PACKAGE_NAME}}
+      - task: build_deb
+        vars:
+          GO_BINARY: "{{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}}"
+          ARCH: "armhf"
 
     vars:
-      PLATFORM_DIR: "{{ .PROJECT_NAME }}_linux_arm_7"
-      BUILD_COMMAND: "go build -o {{ .DIST_DIR }}/{{ .PLATFORM_DIR }}/{{ .PROJECT_NAME }} {{ .LDFLAGS }}"
-      BUILD_PLATFORM: "linux/armv7"
-      CONTAINER_TAG: "{{ .GO_VERSION }}-arm"
+      PLATFORM_DIR: "{{.PROJECT_NAME}}_linux_arm_7"
+      BUILD_COMMAND: "go build -o {{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}} {{.LDFLAGS}}"
       PACKAGE_PLATFORM: "Linux_ARMv7"
-      PACKAGE_NAME: "{{ .PROJECT_NAME }}_{{ .VERSION }}_{{ .PACKAGE_PLATFORM }}.tar.gz"
+      PACKAGE_NAME: "{{.PROJECT_NAME}}_{{.VERSION}}_{{.PACKAGE_PLATFORM}}.tar.gz"
 
   Linux_ARMv6:
     desc: Builds Linux ARMv6 binaries
-    dir: "{{ .DIST_DIR }}"
     cmds:
       - |
-        docker run -v `pwd`/..:/home/build -w /home/build \
-        -e CGO_ENABLED=1 \
-        {{ .CONTAINER }}:{{ .CONTAINER_TAG }} \
-        --build-cmd "{{ .BUILD_COMMAND }}" \
-        -p "{{ .BUILD_PLATFORM }}"
+        CGO_ENABLED=0 GOOS=linux GOARM=6 GOARCH=arm {{.BUILD_COMMAND}}
 
-        tar cz -C {{ .PLATFORM_DIR }} {{ .PROJECT_NAME }} -C ../.. LICENSE.txt  -f {{ .PACKAGE_NAME }}
-        sha256sum {{ .PACKAGE_NAME }} >> {{ .CHECKSUM_FILE }}
+        cd {{.DIST_DIR}}
+        tar cz -C {{.PLATFORM_DIR}} {{.PROJECT_NAME}} -C ../.. LICENSE.txt  -f {{.PACKAGE_NAME}}
+      - task: build_deb
+        vars:
+          GO_BINARY: "{{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}}"
+          ARCH: "armel"
 
     vars:
-      PLATFORM_DIR: "{{ .PROJECT_NAME }}_linux_arm_6"
-      BUILD_COMMAND: "go build -o {{ .DIST_DIR }}/{{ .PLATFORM_DIR }}/{{ .PROJECT_NAME }} {{ .LDFLAGS }}"
-      BUILD_PLATFORM: "linux/armv6"
-      CONTAINER_TAG: "{{ .GO_VERSION }}-arm"
+      PLATFORM_DIR: "{{.PROJECT_NAME}}_linux_arm_6"
+      BUILD_COMMAND: "go build -buildvcs=false -o {{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}} {{.LDFLAGS}}"
       PACKAGE_PLATFORM: "Linux_ARMv6"
-      PACKAGE_NAME: "{{ .PROJECT_NAME }}_{{ .VERSION }}_{{ .PACKAGE_PLATFORM }}.tar.gz"
+      PACKAGE_NAME: "{{.PROJECT_NAME}}_{{.VERSION}}_{{.PACKAGE_PLATFORM}}.tar.gz"
 
   Linux_ARM64:
     desc: Builds Linux ARM64 binaries
-    dir: "{{ .DIST_DIR }}"
     cmds:
       - |
-        docker run -v `pwd`/..:/home/build -w /home/build \
-        -e CGO_ENABLED=1 \
-        {{ .CONTAINER }}:{{ .CONTAINER_TAG }} \
-        --build-cmd "{{ .BUILD_COMMAND }}" \
-        -p "{{ .BUILD_PLATFORM }}"
+        CGO_ENABLED=0 GOOS=linux GOARCH=arm64 {{.BUILD_COMMAND}}
 
-        tar cz -C {{ .PLATFORM_DIR }} {{ .PROJECT_NAME }} -C ../.. LICENSE.txt  -f {{ .PACKAGE_NAME }}
-        sha256sum {{ .PACKAGE_NAME }} >> {{ .CHECKSUM_FILE }}
+        cd {{.DIST_DIR}}
+        tar cz -C {{.PLATFORM_DIR}} {{.PROJECT_NAME}} -C ../.. LICENSE.txt  -f {{.PACKAGE_NAME}}
+      - task: build_deb
+        vars:
+          GO_BINARY: "{{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}}"
+          ARCH: "arm64"
 
     vars:
-      PLATFORM_DIR: "{{ .PROJECT_NAME }}_linux_arm_6"
-      BUILD_COMMAND: "go build -o {{ .DIST_DIR }}/{{ .PLATFORM_DIR }}/{{ .PROJECT_NAME }} {{ .LDFLAGS }}"
-      BUILD_PLATFORM: "linux/arm64"
-      CONTAINER_TAG: "{{ .GO_VERSION }}-arm"
+      PLATFORM_DIR: "{{.PROJECT_NAME}}_linux_arm_64"
+      BUILD_COMMAND: "go build -buildvcs=false -o {{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}} {{.LDFLAGS}}"
       PACKAGE_PLATFORM: "Linux_ARM64"
-      PACKAGE_NAME: "{{ .PROJECT_NAME }}_{{ .VERSION }}_{{ .PACKAGE_PLATFORM }}.tar.gz"
+      PACKAGE_NAME: "{{.PROJECT_NAME}}_{{.VERSION}}_{{.PACKAGE_PLATFORM}}.tar.gz"
 
   macOS_64bit:
     desc: Builds Mac OS X 64 bit binaries
-    dir: "{{ .DIST_DIR }}"
+    dir: "{{.DIST_DIR}}"
     cmds:
+      # "git config safe.directory" is required until this is fixed https://github.com/elastic/golang-crossbuild/issues/232
       - |
         docker run -v `pwd`/..:/home/build -w /home/build \
         -e CGO_ENABLED=1 \
-        {{ .CONTAINER }}:{{ .CONTAINER_TAG }} \
-        --build-cmd "{{ .BUILD_COMMAND }}" \
-        -p "{{ .BUILD_PLATFORM }}"
+        {{.CONTAINER}}:{{.CONTAINER_TAG}} \
+        --build-cmd "git config --global --add safe.directory /home/build && {{.BUILD_COMMAND}}" \
+        -p "{{.BUILD_PLATFORM}}"
 
-        tar cz -C {{ .PLATFORM_DIR }} {{ .PROJECT_NAME }} -C ../.. LICENSE.txt  -f {{ .PACKAGE_NAME }}
-        sha256sum {{ .PACKAGE_NAME }} >> {{ .CHECKSUM_FILE }}
+        tar cz -C {{.PLATFORM_DIR}} {{.PROJECT_NAME}} -C ../.. LICENSE.txt  -f {{.PACKAGE_NAME}}
 
     vars:
-      PLATFORM_DIR: "{{ .PROJECT_NAME }}_osx_darwin_amd64"
-      BUILD_COMMAND: "go build -o {{ .DIST_DIR }}/{{ .PLATFORM_DIR }}/{{ .PROJECT_NAME }} {{ .LDFLAGS }}"
+      PLATFORM_DIR: "{{.PROJECT_NAME}}_osx_darwin_amd64"
+      BUILD_COMMAND: "go build -o {{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}} {{.LDFLAGS}}"
       BUILD_PLATFORM: "darwin/amd64"
-      CONTAINER_TAG: "{{ .GO_VERSION }}-darwin"
+      CONTAINER_TAG: "{{.GO_VERSION}}-darwin-debian12"
       PACKAGE_PLATFORM: "macOS_64bit"
-      PACKAGE_NAME: "{{ .PROJECT_NAME }}_{{ .VERSION }}_{{ .PACKAGE_PLATFORM }}.tar.gz"
+      PACKAGE_NAME: "{{.PROJECT_NAME}}_{{.VERSION}}_{{.PACKAGE_PLATFORM}}.tar.gz"
 
-vars:
-  CONTAINER: "docker.elastic.co/beats-dev/golang-crossbuild"
-  GO_VERSION: "1.14.7"
-  CHECKSUM_FILE: "{{ .VERSION }}-checksums.txt"
+  macOS_ARM64:
+    desc: Builds Mac OS X ARM64 binaries
+    dir: "{{.DIST_DIR}}"
+    cmds:
+      # "git config safe.directory" is required until this is fixed https://github.com/elastic/golang-crossbuild/issues/232
+      - |
+        docker run -v `pwd`/..:/home/build -w /home/build \
+        -e CGO_ENABLED=1 \
+        {{.CONTAINER}}:{{.CONTAINER_TAG}} \
+        --build-cmd "git config --global --add safe.directory /home/build && {{.BUILD_COMMAND}}" \
+        -p "{{.BUILD_PLATFORM}}"
+
+        tar cz -C {{.PLATFORM_DIR}} {{.PROJECT_NAME}} -C ../.. LICENSE.txt  -f {{.PACKAGE_NAME}}
+
+    vars:
+      PLATFORM_DIR: "{{.PROJECT_NAME}}_osx_darwin_arm64"
+      BUILD_COMMAND: "go build -o {{.DIST_DIR}}/{{.PLATFORM_DIR}}/{{.PROJECT_NAME}} {{.LDFLAGS}}"
+      BUILD_PLATFORM: "darwin/arm64"
+      # The image with tag "1.27.3-darwin-arm64-debian12" has incorrect tagging,
+      # so we need to use the sha256 digest to ensure we are using the correct image.
+      CONTAINER_TAG: "{{.GO_VERSION}}-darwin-arm64-debian12@sha256:dfccb428c621b57f3601718c7a65e08080517e0a421eb8452e6e2a4b3b135db3"
+      PACKAGE_PLATFORM: "macOS_ARM64"
+      PACKAGE_NAME: "{{.PROJECT_NAME}}_{{.VERSION}}_{{.PACKAGE_PLATFORM}}.tar.gz"
+
+  jsonschema:
+    desc: Copy the JSON schema to dist folder
+    cmds:
+      - mkdir --parents {{.DIST_DIR}}
+      - cp ./internal/cli/configuration/configuration.schema.json {{.DIST_DIR}}/{{.PROJECT_NAME}}_{{.VERSION}}_configuration.schema.json
+
+  build_deb:
+    desc: Builds the deb package
+    internal: true
+    cmds:
+      - |
+        docker build \
+          --build-arg BINARY_NAME={{.PROJECT_NAME}} \
+          --build-arg DEB_NAME={{.PROJECT_NAME}} \
+          --build-arg VERSION={{ .VERSION }} \
+          --build-arg ARCH={{ .ARCH }} \
+          --build-arg GO_BINARY={{ .GO_BINARY }} \
+          --output=./dist \
+          -f debian/Dockerfile .
+    vars:
+      VERSION: "{{if .TAG}}{{.VERSION}}{{else}}v0.0.0-{{.VERSION}}{{end}}"

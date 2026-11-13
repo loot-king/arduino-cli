@@ -2,17 +2,25 @@
 
 - `board_manager`
   - `additional_urls` - the URLs to any additional Boards Manager package index files needed for your boards platforms.
+  - `enable_unsafe_install` - set to `true` to allow installation of packages that do not pass the checksum test. This
+    is considered an unsafe installation method and should be used only for development purposes.
 - `daemon` - options related to running Arduino CLI as a [gRPC] server.
   - `port` - TCP port used for gRPC client connections.
 - `directories` - directories used by Arduino CLI.
   - `data` - directory used to store Boards/Library Manager index files and Boards Manager platform installations.
   - `downloads` - directory used to stage downloaded archives during Boards/Library Manager installations.
   - `user` - the equivalent of the Arduino IDE's ["sketchbook" directory][sketchbook directory]. Library Manager
-    installations are made to the `libraries` subdirectory of the user directory.
+    installations are made to the `libraries` subdirectory of the user directory. Users can manually install 3rd party
+    platforms in the `hardware` subdirectory of the user directory.
+  - `builtin.libraries` - the libraries in this directory will be available to all platforms without the need for the
+    user to install them, but with the lowest priority over other installed libraries with the same name, it's the
+    equivalent of the Arduino IDE's bundled libraries directory.
 - `library` - configuration options relating to Arduino libraries.
   - `enable_unsafe_install` - set to `true` to enable the use of the `--git-url` and `--zip-file` flags with
     [`arduino-cli lib install`][arduino cli lib install]. These are considered "unsafe" installation methods because
     they allow installing files that have not passed through the Library Manager submission process.
+- `locale` - the language used by Arduino CLI to communicate to the user, the parameter is the language identifier in
+  the standard POSIX format `<language>[_<TERRITORY>[.<encoding>]]` (for example `it` or `it_IT`, or `it_IT.UTF-8`).
 - `logging` - configuration options for Arduino CLI's logs.
   - `file` - path to the file where logs will be written.
   - `format` - output format for the logs. Allowed values are `text` or `json`.
@@ -21,9 +29,59 @@
 - `metrics` - settings related to the collection of data used for continued improvement of Arduino CLI.
   - `addr` - TCP port used for metrics communication.
   - `enabled` - controls the use of metrics.
+- `output` - settings related to text output.
+  - `no_color` - ANSI color escape codes are added by default to the output. Set to `true` to disable colored text
+    output.
 - `sketch` - configuration options relating to [Arduino sketches][sketch specification].
   - `always_export_binaries` - set to `true` to make [`arduino-cli compile`][arduino-cli compile] always save binaries
     to the sketch folder. This is the equivalent of using the [`--export-binaries`][arduino-cli compile options] flag.
+- `updater` - configuration options related to Arduino CLI updates
+  - `enable_notification` - set to `false` to disable notifications of new Arduino CLI releases, defaults to `true`
+- `build_cache` configuration options related to the compilation cache
+  - `path` - the path to the folder under which build caches are stored.
+  - `extra_paths` - a list of paths to look for precompiled artifacts if not found on `build_cache.path` setting.
+  - `compilations_before_purge` - interval, in number of compilations, at which the cache is purged, defaults to `10`.
+    When `0` the cache is never purged.
+  - `ttl` - cache expiration time of build folders. If the cache is hit by a compilation the corresponding build files
+    lifetime is renewed. The value format must be a valid input for
+    [time.ParseDuration()](https://pkg.go.dev/time#ParseDuration), defaults to `720h` (30 days).
+- `network` - configuration options related to the network connection.
+  - `proxy` - URL of the proxy server.
+  - `connection_timeout` - network inactivity timeout, the value format must be a valid input for
+    [time.ParseDuration()](https://pkg.go.dev/time#ParseDuration), defaults to `60s` (60 seconds). `0` means it will
+    wait indefinitely.
+  - `cloud_api.skip_board_detection_calls` - if set to `true` it will make the Arduino CLI skip network calls to Arduino
+    Cloud API to help detection of an unknown board.
+
+> **ⓘ** When the `GITHUB_TOKEN` environment variable is set, Arduino CLI automatically adds it as an
+> `Authorization: Bearer` header on requests to the GitHub Actions artifact download API:
+> `api.github.com/repos/{owner}/{repo}/actions/artifacts/{id}/{format}`. This allows downloading private workflow
+> artifacts. The token is **never** sent to any other URL, even when a redirect is followed.
+
+### Default directories
+
+The following are the default directories selected by the Arduino CLI if alternatives are not specified in the
+configuration file.
+
+- The `build_cache.path` default is OS-dependent:
+  - on Linux (and other Unix-based OS) is: if
+    [`$XDG_CACHE_HOME`](https://specifications.freedesktop.org/basedir-spec/latest/#variables) is defined,
+    `$XDG_CACHE_HOME/arduino`. Otherwise `{HOME}/.config/arduino`.
+  - on Windows is: `{HOME}/AppData/Local/arduino`
+  - on MacOS is: `{HOME}/Library/Caches/arduino`
+
+- The `directories.data` default is OS-dependent:
+  - on Linux (and other Unix-based OS) is: `{HOME}/.arduino15`
+  - on Windows is: `{HOME}/AppData/Local/Arduino15`
+  - on MacOS is: `{HOME}/Library/Arduino15`
+
+- The `directories.downloads` default is `{directories.data}/staging`. If the value of `{directories.data}` is changed
+  in the configuration the user-specified value will be used.
+
+- The `directories.user` default is OS-dependent:
+  - on Linux (and other Unix-based OS) is: `{HOME}/Arduino`
+  - on Windows is: `{DOCUMENTS}/Arduino`
+  - on MacOS is: `{HOME}/Documents/Arduino`
 
 ## Configuration methods
 
@@ -61,6 +119,17 @@ variable sets the `directories.user` configuration option.
 On Linux or macOS, you can use the [`export` command][export command] to set environment variables. On Windows cmd, you
 can use the [`set` command][set command].
 
+`ARDUINO_BOARD_MANAGER_ADDITIONAL_URLS` environment variables can be a list of space-separated URLs.
+
+The `GITHUB_TOKEN` environment variable is also recognised: when set, its value is sent as an `Authorization: Bearer`
+header on GitHub Actions artifact download requests only (see the note in the [Configuration keys](#configuration-keys)
+section above).
+
+`ARDUINO_FORCE_TOOLS_ARCH` can be set to a Go architecture name such as `arm64` or `amd64` to force installation of tool
+dependencies in the "[flavour][tool flavour]" for the specified architecture, rather than for the host machine's
+architecture. The tools must be available in the exact flavour for the host machine's operating system; no emulation
+fallback is applied. This is intended for cross-architecture or emulated environments.
+
 #### Example
 
 Setting an additional Boards Manager URL using the `ARDUINO_BOARD_MANAGER_ADDITIONAL_URLS` environment variable:
@@ -69,10 +138,15 @@ Setting an additional Boards Manager URL using the `ARDUINO_BOARD_MANAGER_ADDITI
 $ export ARDUINO_BOARD_MANAGER_ADDITIONAL_URLS=https://downloads.arduino.cc/packages/package_staging_index.json
 ```
 
+Setting multiple additional Boards Manager URLs using the `ARDUINO_BOARD_MANAGER_ADDITIONAL_URLS` environment variable:
+
+```sh
+$ export ARDUINO_BOARD_MANAGER_ADDITIONAL_URLS="https://downloads.arduino.cc/packages/package_staging_index.json https://downloads.arduino.cc/packages/package_mbed_index.json"
+```
+
 ### Configuration file
 
-[`arduino-cli config init`][arduino-cli config init] creates or updates a configuration file with the current
-configuration settings.
+[`arduino-cli config init`][arduino-cli config init] creates a new empty configuration file.
 
 This allows saving the options set by command line flags or environment variables. For example:
 
@@ -80,30 +154,14 @@ This allows saving the options set by command line flags or environment variable
 arduino-cli config init --additional-urls https://downloads.arduino.cc/packages/package_staging_index.json
 ```
 
-#### File name
-
-The configuration file must be named `arduino-cli`, with the appropriate file extension for the file's format.
-
-#### Supported formats
-
-`arduino-cli config init` creates a YAML file, however a variety of common formats are supported:
-
-- [JSON]
-- [TOML]
-- [YAML]
-- [Java properties file]
-- [HCL]
-- envfile
-- [INI]
-
 #### Locations
 
-Configuration files in the following locations are recognized by Arduino CLI:
+The default configuration file is named `arduino-cli.yaml`. The configuration file is searched in the following
+locations, in order of priority:
 
 1. Location specified by the [`--config-file`][arduino cli command reference] command line flag
-1. Current working directory
-1. Any parent directory of the current working directory (more immediate parents having higher precedence)
-1. Arduino CLI data directory (as configured by `directories.data`)
+1. Location specified by the `ARDUINO_CONFIG_FILE` environment variable
+1. Location specified by the `ARDUINO_DIRECTORIES_DATA` environment variable
 
 If multiple configuration files are present, the one highest on the above list is used. Configuration files are not
 combined.
@@ -131,6 +189,11 @@ Doing the same using a TOML format file:
 additional_urls = [ "https://downloads.arduino.cc/packages/package_staging_index.json" ]
 ```
 
+#### JSON schema
+
+The configuration file [JSON schema][configuration-schema] can be used to independently validate the file content. This
+schema should be considered unstable in this version.
+
 [grpc]: https://grpc.io
 [sketchbook directory]: sketch-specification.md#sketchbook
 [arduino cli lib install]: commands/arduino-cli_lib_install.md
@@ -142,6 +205,7 @@ additional_urls = [ "https://downloads.arduino.cc/packages/package_staging_index
 [arduino-cli global flags]: commands/arduino-cli_config.md#options-inherited-from-parent-commands
 [export command]: https://ss64.com/bash/export.html
 [set command]: https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/set_1
+[tool flavour]: package_index_json-specification.md#tools-flavours-available-builds-made-for-different-os
 [arduino-cli config init]: commands/arduino-cli_config_init.md
 [json]: https://www.json.org
 [toml]: https://github.com/toml-lang/toml
@@ -149,3 +213,4 @@ additional_urls = [ "https://downloads.arduino.cc/packages/package_staging_index
 [java properties file]: https://en.wikipedia.org/wiki/.properties
 [hcl]: https://github.com/hashicorp/hcl
 [ini]: https://en.wikipedia.org/wiki/INI_file
+[configuration-schema]: ./configuration.schema.json

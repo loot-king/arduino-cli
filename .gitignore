@@ -7,16 +7,20 @@
 /wiki
 .idea
 coverage_*.txt
+coverage_data
 __pycache__
 venv
 .pytest_cache
 /dist
 /.pytest-tmp-dir
+/node_modules/
+__debug_bin*
+.vscode
 
 # gRPC client example folder
-/client_example/client_example
-/client_example/**/*.bin
-/client_example/**/*.elf
+/rpc/internal/client_example/client_example
+/rpc/internal/client_example/**/*.bin
+/rpc/internal/client_example/**/*.elf
 
 # Misc.
 .DS_Store
@@ -24,6 +28,11 @@ venv
 # Mkdocs
 /site/
 /public/
-/docsgen/arduino-cli
+/internal/docsgen/arduino-cli
+/internal/docsgen/arduino-cli.exe
 /docs/rpc/*.md
 /docs/commands/*.md
+/docs/configuration.schema.json
+
+# Delve debugger binary file
+__debug_bin
